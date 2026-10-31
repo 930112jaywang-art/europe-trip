@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#13283d">
+<title>歐洲聖誕旅程</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+
+/* Layout: one-column phone view — clock header, "now" + departure-board style "next" ticket, then day strip and the day's timeline */
+:root{
+  --bg:#eef2f5; --surface:#ffffff; --ink:#14202b; --muted:#5d6b78; --line:#d5dde4;
+  --board:#13283d; --board-ink:#f4f7fa; --amber:#e8a317; --accent:#1f5f8b; --warn:#b4471f; --warn-bg:#fbe9e1;
+  --land:#e6ebef; --land-hi:#f9fafb; --border:#b7c4cf; --train:#1f5f8b; --mtn:#2f8a57; --bus:#c98a0c; --air:#6f62a8;
+  --f-sign:"Barlow Condensed","Noto Sans TC",system-ui,sans-serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c151e; --surface:#14212d; --ink:#e7edf2; --muted:#93a3b2; --line:#253545;
+  --board:#081019; --board-ink:#f4f7fa; --amber:#f0b43a; --accent:#6fb0dd; --warn:#f08a62; --warn-bg:#3a1f16;
+  --land:#182633; --land-hi:#1f3142; --border:#3a5063; --train:#6fb0dd; --mtn:#5cc48a; --bus:#f0b43a; --air:#a99be0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c151e; --surface:#14212d; --ink:#e7edf2; --muted:#93a3b2; --line:#253545;
+  --board:#081019; --board-ink:#f4f7fa; --amber:#f0b43a; --accent:#6fb0dd; --warn:#f08a62; --warn-bg:#3a1f16;
+  --land:#182633; --land-hi:#1f3142; --border:#3a5063; --train:#6fb0dd; --mtn:#5cc48a; --bus:#f0b43a; --air:#a99be0; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:500}
+.clock{font-family:var(--f-sign);font-weight:700;font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
+.clock small{font-size:16px;font-weight:600;color:var(--muted);margin-left:6px;letter-spacing:.04em}
+.city{text-align:right}
+.city b{display:block;font-size:18px}
+.banner{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px}
+.banner b{font-family:var(--f-sign);font-size:20px;color:var(--accent)}
+h2{font-size:13px;letter-spacing:.1em;color:var(--muted);margin:0 0 8px;font-weight:700}
+.now{background:var(--surface);border-radius:12px;padding:16px;border:1px solid var(--line)}
+.now .t{font-family:var(--f-sign);font-weight:600;font-size:18px;color:var(--accent);font-variant-numeric:tabular-nums}
+.now h3{margin:2px 0 6px;font-size:21px;line-height:1.3;text-wrap:balance}
+.note{color:var(--muted);font-size:14px;margin:0}
+.warn{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:8px 10px;font-size:13.5px;margin-top:10px;font-weight:500}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;font-size:14px;font-weight:600;text-decoration:none;
+  background:var(--accent);color:var(--surface);border:0;cursor:pointer;font-family:inherit}
+.btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+.btn:focus-visible,.chip:focus-visible,summary:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+/* departure-board ticket */
+.board{background:var(--board);color:var(--board-ink);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.board .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.board .dep{font-family:var(--f-sign);font-size:34px;font-weight:700;color:var(--amber);line-height:1;font-variant-numeric:tabular-nums}
+.board .dur{font-family:var(--f-sign);font-size:15px;letter-spacing:.06em;text-transform:uppercase;opacity:.85}
+.board .dur b{font-size:26px;color:var(--board-ink);margin-left:4px}
+.board h3{margin:0;font-size:19px;line-height:1.35}
+.route{display:flex;align-items:center;gap:8px;font-family:var(--f-sign);font-size:18px;font-weight:600;letter-spacing:.02em;flex-wrap:wrap}
+.route .arr{color:var(--amber)}
+.line{display:inline-block;background:var(--amber);color:var(--board);font-family:var(--f-sign);font-weight:700;font-size:14px;padding:1px 8px;border-radius:4px;letter-spacing:.04em}
+.board p{margin:0;font-size:14px;opacity:.88}
+.board .btn{background:var(--amber);color:var(--board)}
+.board .btn.ghost{background:transparent;color:var(--board-ink);border-color:rgba(244,247,250,.5)}
+.board .warn{margin-top:0}
+.days{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+.chip{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;min-width:54px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink);cursor:pointer;font-family:inherit}
+.chip .d{font-family:var(--f-sign);font-weight:700;font-size:19px;line-height:1.1;font-variant-numeric:tabular-nums}
+.chip .w{font-size:11px;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--board);border-color:var(--board);color:var(--board-ink)}
+.chip[aria-pressed="true"] .w{color:var(--amber)}
+.dayhead{font-size:17px;font-weight:700;margin:4px 0 2px}
+[hidden]{display:none!important}
+.view{display:flex;flex-direction:column;gap:18px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;gap:4px}
+.tabs button,.seg button{font:inherit;font-weight:600;border:0;border-radius:7px;padding:9px 6px;background:transparent;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--board);color:var(--board-ink)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{border:1px solid var(--line);background:var(--surface);padding:6px 14px;border-radius:999px;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.tabs button:focus-visible,.seg button:focus-visible,.legs button:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.mapbox{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;width:100%;aspect-ratio:4/3;max-height:75vh}
+.mapbox svg{display:block;width:100%;height:100%;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.mapbox svg:active{cursor:grabbing}
+.mapbox.full{position:fixed;inset:0;z-index:50;aspect-ratio:auto;max-height:none;height:100%;border:0;border-radius:0}
+.mapctl{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:6px}
+.mapbox.full .mapctl{top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px))}
+.mapctl button{width:42px;height:42px;display:grid;place-items:center;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 22px/1 var(--f-body);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.mapctl button:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.mapinfo{position:absolute;left:10px;bottom:10px;right:64px;background:var(--board);color:var(--board-ink);border-radius:8px;padding:6px 10px;font-size:13px;line-height:1.4;pointer-events:none}
+.mapinfo b{color:var(--amber);font-family:var(--f-sign);font-size:15px;margin-right:4px}
+.mapinfo{display:none}
+.mapbox.full .mapinfo{display:block;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+.mapbox .leg,.mapbox .badge,.mapbox .htl{cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:18px;height:4px;border-radius:2px}
+.legend i.dash{background:repeating-linear-gradient(90deg,var(--air) 0 5px,transparent 5px 9px)}
+.legend i.sq{width:11px;height:11px;border-radius:2px;background:var(--warn)}
+.legs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.legs button{width:100%;display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;text-align:left;font:inherit;color:var(--ink);
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;cursor:pointer}
+.legs button[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.legs .num{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-family:var(--f-sign);font-weight:700;font-size:15px}
+.legs .mid{min-width:0}
+.legs .mid b{display:block}
+.legs .mid span{font-size:13px;color:var(--muted)}
+.legs .dd{font-family:var(--f-sign);font-weight:600;font-size:16px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.legs .dd small{display:block;font-size:12px;color:var(--muted);font-family:var(--f-body);font-weight:400}
+.hotels{display:flex;flex-direction:column;gap:10px}
+.hcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+.hcard .lbl{font-size:12px;letter-spacing:.08em;color:var(--warn);font-weight:700}
+.hcard h3{margin:2px 0 0;font-size:17px}
+.hcard .addr{font-size:13px;color:var(--muted)}
+.hcard ul{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column}
+.hcard li{border-top:1px solid var(--line)}
+.hcard li a{display:flex;justify-content:space-between;gap:10px;padding:10px 0;color:var(--ink);text-decoration:none;font-size:15px}
+.hcard li a span:first-child{color:var(--accent);font-weight:600}
+.hcard li .t{font-family:var(--f-sign);font-weight:600;font-size:17px;white-space:nowrap}
+.hcard.pending{color:var(--muted);font-size:14px}
+.stay{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:6px 0 4px;font-size:14px}
+.stay .lbl{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.stay b{display:block}
+.stay .addr{font-size:13px;color:var(--muted)}
+.stay a{color:var(--accent);font-weight:600;font-size:13px;white-space:nowrap}
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.tl li{display:grid;grid-template-columns:52px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.tl li:first-child{border-top:0}
+.tl .tm{font-family:var(--f-sign);font-weight:600;font-size:17px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tl .body{min-width:0}
+.tl .ti{font-weight:700}
+.tl .go{font-size:13px;color:var(--accent);margin-top:3px}
+.tl .mini{font-size:13px;color:var(--muted);margin-top:2px}
+.tl li.cur .tm{color:var(--amber)}
+.tl li.cur .ti::before{content:"● ";color:var(--amber)}
+.tl li.past{opacity:.55}
+.tl a{color:var(--accent);font-size:13px;font-weight:600}
+details{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px}
+summary{cursor:pointer;font-weight:600;color:var(--muted)}
+.sim{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.sim input{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.foot{font-size:12.5px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.board{animation:in .35s ease-out}@keyframes in{from{transform:translateY(4px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow" id="tzLabel">歐洲時間</div>
+      <div class="clock" id="clock">--:--</div>
+    </div>
+    <div class="city"><span class="eyebrow" id="dateLabel"></span><b id="cityLabel"></b></div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="切換畫面">
+    <button type="button" role="tab" id="tabTrip" aria-selected="true">行程</button>
+    <button type="button" role="tab" id="tabMap" aria-selected="false">地圖・交通・住宿</button>
+  </div>
+
+  <div id="viewTrip" class="view">
+  <div class="banner" id="banner" hidden></div>
+
+  <section id="nowSec">
+    <h2>現在</h2>
+    <div class="now" id="nowCard"></div>
+  </section>
+
+  <section id="nextSec">
+    <h2 id="nextLabel">下一步</h2>
+    <div class="board" id="nextCard"></div>
+  </section>
+
+  <section>
+    <h2>每日行程</h2>
+    <div class="days" id="days" role="group" aria-label="選擇日期"></div>
+    <div class="dayhead" id="dayHead"></div>
+    <div class="stay" id="stay" hidden></div>
+    <ol class="tl" id="timeline"></ol>
+  </section>
+
+  <details id="simBox">
+    <summary>模擬時間（出發前預覽用）</summary>
+    <div class="sim">
+      <input type="datetime-local" id="simInput" value="2026-12-24T16:30">
+      <button class="btn" id="simOn" type="button">套用</button>
+      <button class="btn ghost" id="simOff" type="button">回到真實時間</button>
+    </div>
+  </details>
+  </div>
+
+  <div id="viewMap" class="view" hidden>
+    <div class="seg" role="group" aria-label="地圖範圍" id="regionBtns">
+      <button type="button" data-r="all" aria-pressed="true">全覽</button>
+      <button type="button" data-r="de" aria-pressed="false">德國</button>
+      <button type="button" data-r="ch" aria-pressed="false">瑞士</button>
+      <button type="button" data-r="paris" aria-pressed="false">巴黎</button>
+    </div>
+    <div class="mapbox" id="mapbox">
+      <svg id="map" role="img" aria-label="旅程路線地圖" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="mapctl">
+        <button type="button" id="zFull" aria-label="全螢幕"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        <button type="button" id="zIn" aria-label="放大">+</button>
+        <button type="button" id="zOut" aria-label="縮小">−</button>
+        <button type="button" id="zFit" aria-label="回到整個範圍">↺</button>
+      </div>
+      <div class="mapinfo" id="mapInfo"></div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--train)"></i>火車</span>
+      <span><i style="background:var(--mtn)"></i>登山火車・船・纜車</span>
+      <span><i style="background:var(--bus)"></i>遊覽車</span>
+      <span><i class="dash"></i>飛機</span>
+      <span><i class="sq"></i>住宿</span>
+    </div>
+    <div class="board" id="legCard"></div>
+    <section>
+      <h2>城市間交通</h2>
+      <ol class="legs" id="legList"></ol>
+    </section>
+    <section>
+      <h2>住宿與周邊路程</h2>
+      <div class="hotels" id="hotelList"></div>
+    </section>
+  </div>
+
+</div>
+
+<script>
+const EU="Europe/Berlin", TW="Asia/Taipei";
+// go: transport to reach this item. mode label, line, dur, from, to (maps destination), tips
+const H={
+ bar:{name:"Barabas Hotel Luzern",addr:"Löwengraben 18, 6004 Luzern",q:"Barabas Hotel Luzern, Löwengraben 18, 6004 Luzern",nights:"12/24–12/26"},
+ bb:{name:"B&B Hotel Marne-la-Vallée Val d'Europe",addr:"11 Impasse Dorothée le Maître, 77700 Serris",q:"B&B Hotel Marne-la-Vallée Val d'Europe, 77700 Serris",nights:"12/29–12/31"},
+ evi:{name:"Evi's Home Hotel & Apartments",addr:"Stauffacherstrasse 60, 3014 Bern",q:"Evi's Home Hotel & Apartments, Stauffacherstrasse 60, 3014 Bern",nights:"12/26–12/28"},
+ col:{name:"B&B Hôtel Colmar Liberté",addr:"26 Rue des Métiers, 68000 Colmar",q:"B&B Hotel Colmar Liberté, 26 Rue des Métiers, 68000 Colmar",nights:"12/28–12/29"},
+ ch:{name:"Hotel Chevallier",addr:"67 Rue Louis Rouquier, 92300 Levallois-Perret",q:"Hotel Chevallier, 67 Rue Louis Rouquier, 92300 Levallois-Perret",nights:"12/31–1/3"}
+};
+const TRIP=[
+{d:"2026-12-18",w:"五",tz:TW,city:"台灣",title:"台灣出發",items:[
+ {t:"19:30",title:"前往桃園機場",q:"Taoyuan International Airport Terminal",note:"國際線建議起飛前 3 小時到。",go:{mode:"機場捷運",line:"直達車",dur:"約 40 分",from:"台北車站",to:"Taoyuan International Airport"}},
+ {t:"23:00",title:"起飛前往法蘭克福 ✈",note:"實際時間依機票。上機後把手錶調成歐洲時間（台灣 −7 小時）。"}]},
+{d:"2026-12-19",w:"六",tz:EU,city:"法蘭克福 · 馬堡",title:"抵達法蘭克福，馬堡散步",items:[
+ {t:"07:30",title:"抵達法蘭克福機場 FRA",q:"Frankfurt Airport",note:"入境、領行李。先裝好 DB Navigator app 買火車票。"},
+ {t:"09:00",title:"前往馬堡",q:"Marburg (Lahn) Bahnhof",go:{mode:"火車",line:"S8/S9 → RE",dur:"約 1 小時 30 分",from:"Frankfurt Flughafen",to:"Marburg (Lahn) Bahnhof",tips:"機場站搭 S-Bahn 到 Frankfurt Hbf（約 12 分），再轉 RE/RB 到 Marburg（約 1 小時）。",rail:"de"}},
+ {t:"10:40",title:"伊莉莎白教堂 Elisabethkirche",q:"Elisabethkirche Marburg",go:{mode:"步行",dur:"約 8 分",from:"Marburg Bahnhof",to:"Elisabethkirche Marburg",walk:1}},
+ {t:"11:30",title:"上城 Oberstadt 逛街＋午餐",q:"Marktplatz Marburg",note:"石板坡道多，穿好走的鞋。",go:{mode:"步行",dur:"約 12 分（上坡）",from:"Elisabethkirche",to:"Marktplatz Marburg",walk:1}},
+ {t:"13:30",title:"馬堡城堡 Landgrafenschloss",q:"Landgrafenschloss Marburg",note:"城堡在山頂，可俯瞰全城。",go:{mode:"步行",dur:"約 15 分（上坡）",from:"Marktplatz",to:"Landgrafenschloss Marburg",walk:1}},
+ {t:"15:30",title:"回法蘭克福休息",q:"Frankfurt (Main) Hauptbahnhof",note:"第一天有時差，早點休息。住宿待補。",go:{mode:"火車",line:"RE / RB",dur:"約 1 小時",from:"Marburg (Lahn)",to:"Frankfurt (Main) Hauptbahnhof",rail:"de"}}]},
+{d:"2026-12-20",w:"日",tz:EU,city:"法蘭克福 → 紐倫堡",title:"法蘭克福走走，晚上到紐倫堡",items:[
+ {t:"09:30",title:"羅馬廣場 Römerberg＋聖誕市集",q:"Römerberg Frankfurt",note:"德國週日多數商店不開，市集和餐廳照常。",go:{mode:"地鐵",line:"U4 / U5",dur:"約 10 分",from:"Frankfurt Hbf",to:"Römerberg Frankfurt"}},
+ {t:"11:00",title:"法蘭克福大教堂 Kaiserdom",q:"Frankfurter Dom",go:{mode:"步行",dur:"約 3 分",from:"Römerberg",to:"Frankfurter Dom",walk:1}},
+ {t:"12:00",title:"鐵橋看美茵河＋薩克森豪森午餐",q:"Eiserner Steg Frankfurt",note:"過橋到 Sachsenhausen 可以喝當地蘋果酒 Apfelwein。",go:{mode:"步行",dur:"約 6 分",from:"Frankfurter Dom",to:"Eiserner Steg Frankfurt",walk:1}},
+ {t:"14:30",title:"美茵塔觀景台 Main Tower",q:"Main Tower Frankfurt",note:"冬季開放時間較短，出發前查官網。",go:{mode:"步行",dur:"約 15 分",from:"Eiserner Steg",to:"Main Tower Frankfurt",walk:1}},
+ {t:"17:30",title:"搭 ICE 前往紐倫堡",q:"Frankfurt (Main) Hauptbahnhof",note:"記得先回住宿拿行李。",go:{mode:"火車",line:"ICE",dur:"約 2 小時 10 分",from:"Frankfurt (Main) Hbf",to:"Nürnberg Hauptbahnhof",rail:"de"}},
+ {t:"20:00",title:"抵達紐倫堡，入住",q:"Nürnberg Hauptbahnhof"}]},
+{d:"2026-12-21",w:"一",tz:EU,city:"紐倫堡",title:"紐倫堡整天",items:[
+ {t:"09:30",title:"皇帝堡 Kaiserburg",q:"Kaiserburg Nürnberg",note:"老城最高點，城牆視野很好。",go:{mode:"步行",dur:"約 25 分",from:"Nürnberg Hbf",to:"Kaiserburg Nürnberg",walk:1}},
+ {t:"11:30",title:"杜勒故居 Albrecht-Dürer-Haus",q:"Albrecht-Dürer-Haus Nürnberg",go:{mode:"步行",dur:"約 3 分",from:"Kaiserburg",to:"Albrecht-Dürer-Haus",walk:1}},
+ {t:"12:30",title:"中央廣場聖誕市集 Christkindlesmarkt",q:"Hauptmarkt Nürnberg",note:"德國最有名的聖誕市集之一。午餐吃紐倫堡小香腸，看美麗之泉 Schöner Brunnen。",go:{mode:"步行",dur:"約 8 分",from:"Albrecht-Dürer-Haus",to:"Hauptmarkt Nürnberg",walk:1}},
+ {t:"14:30",title:"聖羅倫茲教堂 St. Lorenz",q:"St. Lorenz Nürnberg",go:{mode:"步行",dur:"約 5 分",from:"Hauptmarkt",to:"St. Lorenz Nürnberg",walk:1}},
+ {t:"16:00",title:"手工藝人庭院 Handwerkerhof",q:"Handwerkerhof Nürnberg",go:{mode:"步行",dur:"約 8 分",from:"St. Lorenz",to:"Handwerkerhof Nürnberg",walk:1}},
+ {t:"17:30",title:"回市集看夜景、喝熱紅酒",q:"Hauptmarkt Nürnberg",go:{mode:"步行",dur:"約 10 分",from:"Handwerkerhof",to:"Hauptmarkt Nürnberg",walk:1}}]},
+{d:"2026-12-22",w:"二",tz:EU,city:"紐倫堡 → 慕尼黑",title:"前往慕尼黑，慕尼黑整天",items:[
+ {t:"08:30",title:"搭 ICE 前往慕尼黑",q:"Nürnberg Hauptbahnhof",go:{mode:"火車",line:"ICE",dur:"約 1 小時 10 分",from:"Nürnberg Hbf",to:"München Hauptbahnhof",rail:"de"}},
+ {t:"10:00",title:"寄放行李 / 入住",q:"München Hauptbahnhof",note:"住宿待補。"},
+ {t:"11:00",title:"瑪利亞廣場 Marienplatz・新市政廳",q:"Marienplatz München",note:"新市政廳鐘琴 11:00 / 12:00 有表演。",go:{mode:"S-Bahn",line:"任一 S 線",dur:"約 5 分",from:"München Hbf",to:"Marienplatz München"}},
+ {t:"12:00",title:"穀物市場 Viktualienmarkt 午餐",q:"Viktualienmarkt München",go:{mode:"步行",dur:"約 3 分",from:"Marienplatz",to:"Viktualienmarkt München",walk:1}},
+ {t:"14:00",title:"聖母教堂 Frauenkirche",q:"Frauenkirche München",go:{mode:"步行",dur:"約 6 分",from:"Viktualienmarkt",to:"Frauenkirche München",walk:1}},
+ {t:"15:30",title:"王宮 Residenz・音樂廳廣場",q:"Odeonsplatz München",go:{mode:"步行",dur:"約 8 分",from:"Frauenkirche",to:"Odeonsplatz München",walk:1}},
+ {t:"18:00",title:"皇家啤酒屋 Hofbräuhaus 晚餐",q:"Hofbräuhaus München",go:{mode:"步行",dur:"約 10 分",from:"Odeonsplatz",to:"Hofbräuhaus München",walk:1}}]},
+{d:"2026-12-23",w:"三",tz:EU,city:"新天鵝堡",title:"新天鵝堡一日遊（旅行團）",items:[
+ {t:"07:30",title:"旅行團集合",q:"München Hauptbahnhof",note:"集合點以旅行團通知為準，前一晚再確認一次。"},
+ {t:"08:00",title:"搭遊覽車前往富森",go:{mode:"遊覽車",line:"旅行團",dur:"約 2 小時",from:"München",to:"Schloss Neuschwanstein"}},
+ {t:"10:30",title:"新天鵝堡 Neuschwanstein",q:"Schloss Neuschwanstein",note:"內部依預約時段入場。瑪麗安橋 Marienbrücke 冬季常因結冰封閉。"},
+ {t:"14:00",title:"依團體行程（高天鵝堡 / 阿爾卑湖）",q:"Hohenschwangau"},
+ {t:"16:30",title:"回慕尼黑",go:{mode:"遊覽車",line:"旅行團",dur:"約 2 小時",from:"Füssen",to:"München Hauptbahnhof"}}]},
+{d:"2026-12-24",w:"四",tz:EU,city:"慕尼黑 → 琉森",title:"琉森：湖畔古城的平安夜",stay:H.bar,warn:"12/24 傍晚起商店與多數餐廳打烊，今晚的聖誕大餐務必提前訂位！",items:[
+ {t:"07:30",title:"前往瑞士琉森",q:"München Hauptbahnhof",note:"若改搭飛機到蘇黎世機場 ZRH：機場搭 IR 直達 Luzern 約 1 小時 2 分。",go:{mode:"火車",line:"ECE → IR",dur:"約 4 小時 20 分",from:"München Hbf",to:"Luzern Bahnhof",tips:"EuroCity Express 到 Zürich HB（約 3 小時 30 分），轉 IR/IC 到 Luzern（約 45 分）。",rail:"ch"}},
+ {t:"12:30",title:"Barabas 飯店寄放行李",q:H.bar.q,note:"舊監獄改建的飯店，在老城北側。",go:{mode:"步行",dur:"約 12 分",from:"Luzern Bahnhof",to:H.bar.q,walk:1}},
+ {t:"13:00",title:"卡貝爾橋 Kapellbrücke",q:"Kapellbrücke Luzern",go:{mode:"步行",dur:"約 8 分",from:"Barabas Hotel",to:"Kapellbrücke Luzern",walk:1}},
+ {t:"14:00",title:"垂死獅子像 Löwendenkmal",q:"Löwendenkmal Luzern",go:{mode:"步行",dur:"約 15 分",from:"Kapellbrücke",to:"Löwendenkmal Luzern",walk:1}},
+ {t:"14:45",title:"穆塞格城牆 Museggmauer",q:"Museggmauer Luzern",note:"城塔通常只在 4–11 月開放，冬天以外觀為主。",go:{mode:"步行",dur:"約 10 分",from:"Löwendenkmal",to:"Museggmauer Luzern",walk:1}},
+ {t:"15:45",title:"斯普洛耶橋 Spreuerbrücke",q:"Spreuerbrücke Luzern",go:{mode:"步行",dur:"約 10 分",from:"Museggmauer",to:"Spreuerbrücke Luzern",walk:1}},
+ {t:"17:00",title:"聖萊奧德伽爾教堂聽聖誕鐘聲",q:"Hofkirche St. Leodegar Luzern",go:{mode:"步行",dur:"約 15 分",from:"Spreuerbrücke",to:"Hofkirche St. Leodegar Luzern",walk:1}},
+ {t:"19:00",title:"聖誕大餐（已預訂的餐廳）",note:"餐廳地址待補。"},
+ {t:"21:30",title:"回飯店",q:H.bar.q,go:{mode:"步行",dur:"老城內約 5–15 分",from:"餐廳",to:H.bar.q,walk:1}}]},
+{d:"2026-12-25",w:"五",tz:EU,city:"琉森 · 瑞吉山",title:"冬日聖誕節與瑞吉山",stay:H.bar,items:[
+ {t:"09:00",title:"碼頭搭船到威茲瑙 Vitznau",q:"Luzern Bahnhofquai",note:"冬季船班很少，前一天在 SBB app 查好班次；沒船就改搭火車到 Arth-Goldau 上山。",go:{mode:"船",line:"SGV 遊湖船",dur:"約 1 小時",from:"Luzern Bahnhofquai",to:"Vitznau",rail:"ch"}},
+ {t:"10:15",title:"齒軌火車上瑞吉山頂",q:"Rigi Kulm",go:{mode:"登山火車",line:"Vitznau–Rigi-Bahn",dur:"約 35 分",from:"Vitznau",to:"Rigi Kulm",rail:"ch"}},
+ {t:"11:00",title:"瑞吉山頂 Rigi Kulm＋午餐",q:"Rigi Kulm",note:"上山前看即時影像確認視野。",link:{href:"https://www.rigi.ch",label:"瑞吉山官網（即時影像）"}},
+ {t:"14:30",title:"下山回琉森",q:"Luzern Bahnhof",go:{mode:"登山火車 + 火車",line:"Arth-Rigi-Bahn → IR",dur:"約 1 小時 15 分",from:"Rigi Kulm",to:"Luzern Bahnhof",tips:"往 Arth-Goldau 下山（約 40 分），再轉火車回琉森（約 30 分）。",rail:"ch"}},
+ {t:"17:00",title:"琉森湖畔散步",q:"Seebrücke Luzern",note:"聖誕節當天多數店家休息。"},
+ {t:"19:00",title:"回飯店",q:H.bar.q,go:{mode:"步行",dur:"約 12 分",from:"Seebrücke",to:H.bar.q,walk:1}}]},
+{d:"2026-12-26",w:"六",tz:EU,city:"琉森 → 少女峰 → 伯恩",title:"挑戰歐洲之巔少女峰，晚上住伯恩",stay:H.evi,items:[
+ {t:"07:30",title:"退房，走到琉森車站",q:"Luzern Bahnhof",go:{mode:"步行",dur:"約 12 分",from:"Barabas Hotel",to:"Luzern Bahnhof",walk:1}},
+ {t:"08:00",title:"景觀列車前往茵特拉根",q:"Luzern Bahnhof",go:{mode:"火車",line:"Luzern–Interlaken Express",dur:"約 1 小時 50 分",from:"Luzern",to:"Interlaken Ost",rail:"ch"}},
+ {t:"10:00",title:"Interlaken Ost 置物櫃寄放行李",q:"Interlaken Ost",note:"今晚住伯恩，行李先放車站置物櫃，下山再拿。"},
+ {t:"10:15",title:"上山：艾格快線＋少女峰鐵道",q:"Jungfraujoch",go:{mode:"火車 + 纜車",line:"BOB → Eiger Express → JB",dur:"約 1 小時 30 分",from:"Interlaken Ost",to:"Jungfraujoch",tips:"火車到 Grindelwald Terminal，轉艾格快線纜車到 Eigergletscher，再換齒軌火車登頂。",rail:"ch"}},
+ {t:"11:45",title:"少女峰車站：冰宮、斯芬克斯觀景台",q:"Sphinx Observatory Jungfraujoch",note:"海拔 3,454 m，動作放慢、多喝水，穿足保暖。"},
+ {t:"15:00",title:"下山回茵特拉根",q:"Interlaken Ost",note:"冬季末班車較早，先看好時間。",go:{mode:"火車 + 纜車",line:"JB → Eiger Express → BOB",dur:"約 1 小時 30 分",from:"Jungfraujoch",to:"Interlaken Ost",rail:"ch"}},
+ {t:"16:45",title:"拿行李，火車前往伯恩",q:"Interlaken Ost",go:{mode:"火車",line:"IC",dur:"約 55 分",from:"Interlaken Ost",to:"Bern Bahnhof",rail:"ch"}},
+ {t:"17:45",title:"到 Evi's Home 入住",q:H.evi.q,note:"飯店在伯恩車站北邊的 Breitenrain 區。",go:{mode:"電車",line:"Tram 9",dur:"約 15 分（含步行）",from:"Bern Bahnhof",to:H.evi.q}}]},
+{d:"2026-12-27",w:"日",tz:EU,city:"伯恩 ⇄ 策馬特",title:"策馬特一日來回，朝聖馬特洪峰",stay:H.evi,items:[
+ {t:"07:15",title:"出門到伯恩車站",q:"Bern Bahnhof",go:{mode:"電車",line:"Tram 9",dur:"約 15 分",from:"Evi's Home",to:"Bern Bahnhof"}},
+ {t:"07:40",title:"火車前往策馬特",q:"Bern Bahnhof",go:{mode:"火車",line:"IC → Visp 轉車",dur:"約 2 小時 10 分",from:"Bern Bahnhof",to:"Zermatt Bahnhof",tips:"Bern 搭往 Brig 的 IC 到 Visp（約 55 分），轉 MGB 紅色火車到 Zermatt（約 70 分）。",rail:"ch"}},
+ {t:"10:00",title:"抵達無車山城策馬特",q:"Zermatt Bahnhof",note:"全鎮禁燃油車，靠電動車和步行。"},
+ {t:"10:30",title:"高納葛拉特登山火車（天氣好再上）",q:"Gornergrat",note:"車站就在策馬特火車站對面。山頂可看馬特洪峰與周圍冰河。",go:{mode:"登山火車",line:"Gornergrat Bahn",dur:"約 33 分",from:"Zermatt GGB",to:"Gornergrat",rail:"ch"}},
+ {t:"13:30",title:"下山，鎮上午餐、散步看馬特洪峰",q:"Kirchbrücke Zermatt",go:{mode:"登山火車",line:"Gornergrat Bahn",dur:"約 40 分",from:"Gornergrat",to:"Zermatt",rail:"ch"}},
+ {t:"16:10",title:"火車回伯恩",q:"Zermatt Bahnhof",note:"末班回伯恩的車先查好。",go:{mode:"火車",line:"MGB → Visp 轉 IC",dur:"約 2 小時 10 分",from:"Zermatt Bahnhof",to:"Bern Bahnhof",rail:"ch"}},
+ {t:"18:30",title:"伯恩晚餐，回飯店",q:H.evi.q,go:{mode:"電車",line:"Tram 9",dur:"約 15 分",from:"Bern Bahnhof",to:H.evi.q}}]},
+{d:"2026-12-28",w:"一",tz:EU,city:"伯恩 → 科爾馬",title:"伯恩老城，下午到法國科爾馬",stay:H.col,items:[
+ {t:"09:00",title:"退房，伯恩老城：鐘樓 Zytglogge・拱廊街",q:"Zytglogge Bern",note:"聯合國世界遺產，6 公里長的石砌拱廊。",go:{mode:"電車",line:"Tram 9",dur:"約 15 分",from:"Evi's Home",to:"Zytglogge Bern"}},
+ {t:"10:30",title:"熊公園 BärenPark・玫瑰園看老城",q:"Rosengarten Bern",go:{mode:"步行",dur:"約 15 分",from:"Zytglogge",to:"Rosengarten Bern",walk:1}},
+ {t:"12:15",title:"火車前往科爾馬",q:"Bern Bahnhof",note:"記得先回飯店拿行李（或早上就帶著寄放在車站置物櫃）。",go:{mode:"火車",line:"IC → Basel 轉 TER",dur:"約 2 小時",from:"Bern Bahnhof",to:"Gare de Colmar",tips:"Bern 搭 IC 到 Basel SBB（約 55 分），轉法國 TER 到 Colmar（約 45 分）。跨國換月台要走到 SBB 車站的法國區。",rail:"ch"}},
+ {t:"14:30",title:"到 B&B Hotel Colmar 入住",q:H.col.q,note:"飯店在科爾馬北邊，離車站約 3.5 公里。",go:{mode:"公車 / 計程車",dur:"約 10–15 分",from:"Gare de Colmar",to:H.col.q}},
+ {t:"15:30",title:"小威尼斯 Petite Venise",q:"Petite Venise Colmar",go:{mode:"公車 / 計程車",dur:"約 15 分",from:"B&B Hotel Colmar",to:"Petite Venise Colmar"}},
+ {t:"16:30",title:"老城、人頭屋、聖誕市集",q:"Maison des Têtes Colmar",note:"史特拉斯堡（火車 33 分）時間不夠就改天，這天以科爾馬為主。",go:{mode:"步行",dur:"約 10 分",from:"Petite Venise",to:"Maison des Têtes Colmar",walk:1}},
+ {t:"19:30",title:"回飯店",q:H.col.q,go:{mode:"公車 / 計程車",dur:"約 10–15 分",from:"Colmar 老城",to:H.col.q}}]},
+{d:"2026-12-29",w:"二",tz:EU,city:"科爾馬 → 迪士尼",title:"前往巴黎迪士尼",stay:H.bb,items:[
+ {t:"08:45",title:"退房，前往科爾馬車站",q:"Gare de Colmar",go:{mode:"公車 / 計程車",dur:"約 10–15 分",from:"B&B Hotel Colmar",to:"Gare de Colmar"}},
+ {t:"09:30",title:"火車前往迪士尼 Marne-la-Vallée",q:"Gare de Colmar",go:{mode:"火車",line:"TER → TGV",dur:"約 3 小時 36 分",from:"Gare de Colmar",to:"Gare de Marne-la-Vallée Chessy",tips:"Colmar 搭 TER 到 Strasbourg，轉 TGV 直達 Marne-la-Vallée–Chessy（迪士尼站），不用進巴黎市區。",rail:"fr"}},
+ {t:"13:15",title:"到 B&B Hotel 入住",q:H.bb.q,note:"飯店在 Serris，離迪士尼約 3 公里。",go:{mode:"公車 / 計程車",dur:"公車約 20 分（20–30 分一班），計程車約 10 分",from:"Marne-la-Vallée Chessy",to:H.bb.q}},
+ {t:"15:30",title:"（可選）打折村 La Vallée Village",q:"La Vallée Village",go:{mode:"公車 / 計程車",dur:"約 15 分",from:"B&B Hotel",to:"La Vallée Village"}},
+ {t:"18:30",title:"迪士尼村 Disney Village 晚餐",q:"Disney Village",note:"不用門票，餐廳和商店開到晚上。",go:{mode:"公車 / 計程車",dur:"約 15 分",from:"La Vallée Village",to:"Disney Village"}},
+ {t:"21:00",title:"回飯店",q:H.bb.q,note:"晚上公車班次少，可叫 Uber / 計程車。",go:{mode:"公車 / 計程車",dur:"約 10–20 分",from:"Disney Village",to:H.bb.q}}]},
+{d:"2026-12-30",w:"三",tz:EU,city:"巴黎迪士尼",title:"巴黎迪士尼",stay:H.bb,items:[
+ {t:"08:15",title:"搭公車去迪士尼",q:H.bb.q,go:{mode:"公車",dur:"約 20 分（20–30 分一班）",from:"B&B Hotel",to:"Disneyland Park Paris",tips:"飯店附近的公車站可直達迪士尼，先查好班次；趕時間就叫計程車（約 10 分）。"}},
+ {t:"09:30",title:"入園",q:"Disneyland Park Paris"},
+ {t:"20:00",title:"城堡夜間秀",note:"時間依園方公告。"},
+ {t:"21:00",title:"回飯店",q:H.bb.q,note:"散場人多、公車班次少，可叫 Uber / 計程車。",go:{mode:"公車 / 計程車",dur:"約 10–20 分",from:"Disneyland Paris",to:H.bb.q}}]},
+{d:"2026-12-31",w:"四",tz:EU,city:"迪士尼 → 巴黎",title:"換飯店・凱旋門、艾菲爾鐵塔・跨年",stay:H.ch,items:[
+ {t:"08:45",title:"退房，前往巴黎市區 Hotel Chevallier",q:H.bb.q,go:{mode:"RER + 地鐵",line:"RER A → M3",dur:"約 1 小時 20 分",from:"B&B Hotel",to:H.ch.q,tips:"先搭公車到 Val d'Europe 站，搭 RER A 到 Auber，步行轉地鐵 3 號線 Havre-Caumartin 站坐到 Anatole France。行李大可改搭計程車（約 1 小時）。"}},
+ {t:"10:15",title:"Hotel Chevallier 寄放行李",q:H.ch.q,note:"在 Levallois-Perret，地鐵 3 號線 Anatole France 站走路約 5 分。"},
+ {t:"11:00",title:"凱旋門（可登頂）",q:"Arc de Triomphe",go:{mode:"地鐵 / 公車",dur:"約 20 分",from:"Hotel Chevallier",to:"Arc de Triomphe"}},
+ {t:"12:30",title:"香榭麗舍大道",q:"Avenue des Champs-Élysées",go:{mode:"步行",dur:"沿路逛",from:"Arc de Triomphe",to:"Avenue des Champs-Élysées",walk:1}},
+ {t:"15:00",title:"艾菲爾鐵塔（先網路訂票）",q:"Tour Eiffel",go:{mode:"地鐵",line:"M6",dur:"約 15 分",from:"Charles de Gaulle–Étoile",to:"Bir-Hakeim"}},
+ {t:"17:30",title:"特羅卡德羅看鐵塔亮燈",q:"Trocadéro Paris",note:"天黑後每整點閃燈 5 分鐘。",go:{mode:"步行",dur:"約 10 分",from:"Tour Eiffel",to:"Trocadéro Paris",walk:1}},
+ {t:"19:00",title:"回飯店 check-in、休息",q:H.ch.q,go:{mode:"地鐵",dur:"約 35 分",from:"Trocadéro",to:H.ch.q}},
+ {t:"22:30",title:"跨年：凱旋門燈光秀",q:"Arc de Triomphe",warn:"跨年夜人潮極多，部分地鐵站會封閉，貴重物品收好。",go:{mode:"步行",dur:"約 30 分",from:"Hotel Chevallier",to:"Arc de Triomphe",walk:1}}]},
+{d:"2027-01-01",w:"五",tz:EU,city:"巴黎",title:"羅浮宮",stay:H.ch,warn:"羅浮宮每年 1/1 休館！建議和 1/2 對調。",items:[
+ {t:"00:20",title:"走回飯店",q:H.ch.q,note:"散場時地鐵非常擠，用走的比較快。",go:{mode:"步行",dur:"約 30 分",from:"Arc de Triomphe",to:H.ch.q,walk:1}},
+ {t:"12:00",title:"羅浮宮（1/1 休館，請改日）",q:"Musée du Louvre",warn:"今天休館，可改逛杜樂麗花園、塞納河畔或蒙馬特。",go:{mode:"地鐵",line:"M3 → M1",dur:"約 30 分",from:"Hotel Chevallier",to:"Palais Royal – Musée du Louvre"}}]},
+{d:"2027-01-02",w:"六",tz:EU,city:"巴黎",title:"自由日",stay:H.ch,items:[
+ {t:"09:00",title:"建議：羅浮宮（記得預約時段）",q:"Musée du Louvre",go:{mode:"地鐵",line:"M3 → M1",dur:"約 30 分",from:"Hotel Chevallier",to:"Palais Royal – Musée du Louvre"}},
+ {t:"20:00",title:"回飯店整理行李，明早很早出門",q:H.ch.q,go:{mode:"地鐵",line:"M1 → M3",dur:"約 30 分",from:"Louvre",to:H.ch.q}}]},
+{d:"2027-01-03",w:"日",tz:EU,city:"巴黎 → 法蘭克福 → 台北",title:"回程",items:[
+ {t:"04:45",title:"Hotel Chevallier 退房，出發去機場",q:"Paris Charles de Gaulle Airport",note:"出發機場待確認。這個時間大眾運輸很少，建議前一天請飯店幫忙預約計程車。",go:{mode:"計程車",dur:"約 35–45 分",from:"Hotel Chevallier",to:"Paris Charles de Gaulle Airport"}},
+ {t:"05:30",title:"機場報到"},
+ {t:"07:30",title:"巴黎 → 法蘭克福 ✈（08:50 抵達）",note:"小涂、小傑同班。"},
+ {t:"11:00",title:"小傑轉機：法蘭克福 → 台北 ✈",note:"隔天 01/04 06:20 抵達台北。"}]},
+{d:"2027-01-04",w:"一",tz:TW,city:"台北",title:"回到台北",items:[
+ {t:"06:20",title:"抵達桃園機場 🎉"}]}
+];
+
+const $=id=>document.getElementById(id);
+let simDate=null, selected=null, userPicked=false;
+
+function partsIn(tz, date){
+  const f=new Intl.DateTimeFormat("en-CA",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false});
+  const o={};f.formatToParts(date).forEach(p=>o[p.type]=p.value);
+  const h=o.hour==="24"?"00":o.hour;
+  return {date:`${o.year}-${o.month}-${o.day}`,hm:`${h}:${o.minute}`,min:+h*60+ +o.minute};
+}
+const toMin=t=>{const[a,b]=t.split(":");return +a*60+ +b};
+const md=d=>{const[,m,dd]=d.split("-");return `${+m}/${+dd}`};
+function nowInfo(){
+  // sim: user enters Europe local time
+  if(simDate){const[d,t]=simDate.split("T");return {eu:{date:d,hm:t,min:toMin(t)},tw:null,sim:true}}
+  const n=new Date();return {eu:partsIn(EU,n),tw:partsIn(TW,n),sim:false};
+}
+function locate(info){
+  // find day index and its local time
+  for(let i=0;i<TRIP.length;i++){
+    const day=TRIP[i];
+    const p=day.tz===EU||info.sim?info.eu:info.tw;
+    if(p.date===day.d) return {i,p};
+  }
+  return null;
+}
+function mapsUrl(dest,walk){return "https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(dest)+"&travelmode="+(walk?"walking":"transit")}
+const RAIL={de:["https://www.bahn.com/en","查 DB 班次"],ch:["https://www.sbb.ch/en","查 SBB 班次"],fr:["https://www.sncf-connect.com/en-en/","查 SNCF 班次"]};
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+function render(){
+  const info=nowInfo(), loc=locate(info);
+  const first=TRIP[1].d;
+  // clock
+  $("clock").innerHTML=esc(info.eu.hm)+"<small>"+(info.sim?"模擬":"CET")+"</small>";
+  $("tzLabel").textContent=info.sim?"模擬時間":"歐洲時間";
+  const banner=$("banner");
+  let cur=null,next=null,nextDayLabel=null;
+  if(loc){
+    const day=TRIP[loc.i], items=day.items, m=loc.p.min;
+    let ci=-1;items.forEach((it,k)=>{if(toMin(it.t)<=m)ci=k});
+    cur=ci>=0?{day,it:items[ci],k:ci}:null;
+    if(ci+1<items.length) next={day,it:items[ci+1]};
+    else if(TRIP[loc.i+1]){next={day:TRIP[loc.i+1],it:TRIP[loc.i+1].items[0]};nextDayLabel=md(TRIP[loc.i+1].d)+" 第一站"}
+    if(!userPicked) selected=loc.i;
+    $("dateLabel").textContent=md(day.d)+"（"+day.w+"）";
+    $("cityLabel").textContent=day.city;
+    if(day.warn){banner.hidden=false;banner.innerHTML="⚠ "+esc(day.warn)}else banner.hidden=true;
+  }else{
+    const before=info.eu.date<TRIP[0].d;
+    if(selected===null) selected=1;
+    $("dateLabel").textContent=before?"還沒出發":"旅程已結束";
+    $("cityLabel").textContent=before?"台北":"歡迎回家";
+    if(before){
+      const days=Math.ceil((Date.parse(TRIP[0].d+"T00:00:00+08:00")-Date.now())/864e5);
+      banner.hidden=false;
+      banner.innerHTML=`還有 <b>${days}</b> 天出發`;
+      next={day:TRIP[0],it:TRIP[0].items[0]};nextDayLabel="12/18 出發";
+    }else banner.hidden=true;
+  }
+  // now card
+  const nc=$("nowCard");
+  if(cur){
+    const it=cur.it;
+    nc.innerHTML=`<div class="t">${it.t} 起</div><h3>${esc(it.title)}</h3>${it.warn?`<div class="warn">⚠ ${esc(it.warn)}</div>`:""}
+      <div class="btns">${it.q?`<a class="btn ghost" target="_blank" rel="noopener" href="${mapsUrl(it.q,0)}">在地圖上看</a>`:""}${it.link?`<a class="btn ghost" target="_blank" rel="noopener" href="${it.link.href}">${esc(it.link.label)}</a>`:""}</div>`;
+    $("nowSec").hidden=false;
+  }else if(loc){
+    nc.innerHTML=`<h3>今天的行程還沒開始</h3>`;$("nowSec").hidden=false;
+  }else $("nowSec").hidden=true;
+  // next ticket
+  const bc=$("nextCard");
+  if(next){
+    const it=next.it,g=it.go;
+    $("nextLabel").textContent=nextDayLabel?"下一步・"+nextDayLabel:"下一步";
+    let html=`<div class="row"><span class="dep">${it.t}</span>${g?`<span class="dur">車程<b>${esc(g.dur)}</b></span>`:""}</div><h3>${esc(it.title)}</h3>`;
+    if(g){
+      html+=`<div class="route">${g.line?`<span class="line">${esc(g.line)}</span>`:""}<span>${esc(g.mode)}</span></div>
+      <div class="route"><span>${esc(g.from)}</span><span class="arr">→</span><span>${esc(g.to.split(",")[0])}</span></div>`;
+    }
+    if(it.warn) html+=`<div class="warn">⚠ ${esc(it.warn)}</div>`;
+    const dest=g?g.to:it.q;
+    html+=`<div class="btns">${dest?`<a class="btn" target="_blank" rel="noopener" href="${mapsUrl(dest,g&&g.walk)}">從我目前位置導航</a>`:""}${g&&g.rail?`<a class="btn ghost" target="_blank" rel="noopener" href="${RAIL[g.rail][0]}">${RAIL[g.rail][1]}</a>`:""}</div>`;
+    bc.innerHTML=html;$("nextSec").hidden=false;
+  }else $("nextSec").hidden=true;
+  renderDays(loc,cur);
+}
+
+function renderDays(loc,cur){
+  const box=$("days");
+  if(!box.childElementCount){
+    TRIP.forEach((d,i)=>{const b=document.createElement("button");b.type="button";b.className="chip";b.id="day-"+i;
+      b.innerHTML=`<span class="d">${md(d.d)}</span><span class="w">週${d.w}</span>`;
+      b.addEventListener("click",()=>{selected=i;userPicked=true;renderDays(locate(nowInfo()),null)});box.appendChild(b)});
+  }
+  [...box.children].forEach((b,i)=>b.setAttribute("aria-pressed",i===selected?"true":"false"));
+  const sel=box.children[selected];if(sel&&!userPicked)sel.scrollIntoView({block:"nearest",inline:"center"});
+  const day=TRIP[selected];
+  $("dayHead").textContent=md(day.d)+"（"+day.w+"）"+day.title;
+  const st=$("stay");
+  if(day.stay){st.hidden=false;st.innerHTML=`<div><span class="lbl">今晚住宿</span><b>${esc(day.stay.name)}</b></div><a target="_blank" rel="noopener" href="${mapsUrl(day.stay.q,0)}">導航 →</a>`}
+  else{st.hidden=false;st.innerHTML=`<div><span class="lbl">今晚住宿</span><span class="addr">待補</span></div>`}
+  if(selected===0||selected===TRIP.length-1||day.d==="2027-01-03")st.hidden=true;
+  const isToday=loc&&loc.i===selected, m=isToday?loc.p.min:null;
+  let ci=-1;if(isToday)day.items.forEach((it,k)=>{if(toMin(it.t)<=m)ci=k});
+  $("timeline").innerHTML=day.items.map((it,k)=>{
+    const cls=isToday?(k===ci?"cur":k<ci?"past":""):"";
+    const g=it.go, dest=g?g.to:it.q;
+    return `<li class="${cls}"><span class="tm">${it.t}</span><div class="body"><div class="ti">${esc(it.title)}</div>
+      ${g?`<div class="go">${esc(g.mode)}${g.line?"・"+esc(g.line):""}・${esc(g.dur)}</div>`:""}
+      ${it.warn?`<div class="warn">⚠ ${esc(it.warn)}</div>`:""}
+      ${dest?`<a target="_blank" rel="noopener" href="${mapsUrl(dest,g&&g.walk)}">導航 →</a>`:""}</div></li>`}).join("");
+}
+
+$("simOn").addEventListener("click",()=>{const v=$("simInput").value;if(v){simDate=v;userPicked=false;render()}});
+$("simOff").addEventListener("click",()=>{simDate=null;userPicked=false;selected=null;render()});
+render();
+setInterval(()=>{if(!simDate)render()},30000);
+
+/* ---------- 地圖 ---------- */
+const GEO={"W":810,"H":580,"paths":{"CH":"M550.3,387.6L552.2,388.8L557.0,393.4L556.1,400.8L550.5,413.0L547.6,422.7L547.4,430.3L547.9,433.8L548.8,433.8L554.1,434.3L556.8,434.3L565.0,436.2L571.7,439.2L573.2,442.5L573.9,446.3L581.8,451.5L591.0,454.8L594.1,453.8L605.4,441.4L610.0,443.5L612.7,450.1L612.4,453.4L609.3,466.4L608.8,473.6L611.5,478.1L611.7,481.7L611.0,485.0L606.4,485.4L600.4,483.5L595.3,477.9L591.2,478.6L587.9,480.0L586.2,485.4L584.7,491.6L585.2,495.3L587.6,497.9L589.6,503.8L590.8,511.2L592.0,514.7L590.8,516.1L587.6,517.1L585.0,516.3L580.2,507.2L578.0,503.8L574.4,503.2L567.9,505.3L558.0,510.4L553.9,510.4L550.5,509.3L547.4,505.2L544.7,497.0L543.8,491.8L541.9,492.0L535.6,490.4L532.7,492.5L532.7,500.8L532.0,511.4L528.8,518.0L519.9,529.8L516.8,534.8L515.4,538.5L515.1,541.6L516.6,547.2L518.2,552.4L516.8,555.5L512.2,557.1L508.9,553.8L507.6,548.2L500.4,540.4L503.6,534.0L503.1,532.2L491.3,528.9L486.2,524.1L479.0,515.4L477.5,511.8L478.0,499.8L477.5,496.8L476.6,495.4L473.2,495.4L468.4,499.6L463.8,505.8L454.7,513.0L453.7,514.4L456.8,521.3L456.6,523.9L449.4,534.8L447.9,538.5L438.5,545.3L434.2,547.9L421.2,542.8L417.6,542.1L411.5,545.6L403.3,548.7L390.1,552.0L385.0,549.6L382.9,547.3L381.7,544.0L378.3,538.3L374.4,534.8L371.8,531.0L368.4,526.9L366.2,523.6L369.1,512.4L367.0,508.6L365.8,503.1L366.5,499.3L365.3,498.4L353.2,496.3L343.1,497.0L336.1,500.6L330.1,506.7L329.4,508.1L329.9,509.1L332.8,514.7L327.9,520.8L320.2,525.3L314.9,525.8L312.5,524.9L312.5,518.5L316.9,516.3L321.0,512.1L322.2,506.2L322.6,502.2L318.6,497.2L319.0,494.2L321.7,488.3L323.1,483.3L325.3,478.9L333.5,471.7L341.9,464.5L343.1,456.7L343.8,447.3L345.0,445.1L356.4,439.5L359.0,437.3L360.5,434.2L369.4,423.7L378.3,413.3L380.0,409.8L381.4,407.8L381.4,406.0L380.5,404.8L376.1,403.9L374.7,400.6L379.3,394.7L385.0,391.1L390.6,391.1L392.7,392.7L392.5,394.6L394.9,396.7L399.2,397.3L404.3,396.7L409.6,394.4L412.7,389.2L414.4,385.2L422.6,380.7L428.2,382.9L443.3,383.6L454.7,382.4L461.6,379.3L470.3,379.3L476.1,381.0L477.1,380.9L478.7,380.3L480.2,378.8L485.7,377.6L486.5,376.2L486.2,374.8L485.2,374.1L478.5,374.8L475.9,373.7L475.4,371.1L477.5,366.8L482.4,363.3L486.7,362.5L489.6,363.3L497.0,369.9L498.7,370.3L499.9,369.1L501.4,368.4L504.0,369.6L506.7,373.7L507.2,374.4L523.8,372.9L527.4,372.9L538.7,380.2L550.3,387.6Z","NL":"M314.0,64.9L307.2,64.7L301.0,64.6L297.6,64.0L294.0,62.5L292.3,59.3L290.4,55.7L290.8,53.3L296.9,46.9L297.8,44.9L297.1,44.1L297.8,41.1L302.4,31.4L302.9,27.4L301.0,24.6L297.8,23.1L288.2,20.1L283.6,16.1L281.7,12.5L279.5,11.4L276.4,12.7L268.4,14.0L261.9,12.1L254.2,5.4L252.5,-0.7L251.6,-5.2L249.7,-7.0L247.0,-4.5L243.9,-0.7L237.4,-0.4L235.7,-1.2L235.2,-3.3L235.0,-5.2L233.0,-7.7L231.3,-9.0L223.2,-2.1L220.0,-2.3L216.2,-4.9L214.2,-7.5L210.2,-5.9L206.3,-2.8L207.7,3.3L205.6,4.3L201.0,3.8L195.7,1.4L189.9,-0.2L181.0,-4.4L168.7,-0.9L160.0,-5.1L153.1,-5.4L148.5,-8.7L143.9,-14.1L147.3,-17.7L150.4,-18.9L163.4,-19.6L173.1,-17.4L190.2,-5.6L194.5,-5.8L199.1,-7.1L196.7,-10.4L192.3,-12.0L186.1,-15.1L181.0,-19.6L192.8,-21.0L191.1,-23.3L189.7,-27.3L177.1,-41.0L179.3,-44.8L182.4,-52.8L186.3,-59.4L189.4,-61.1L194.7,-65.8L205.8,-79.7L213.0,-91.0L218.3,-104.2L226.0,-141.0L228.5,-147.2L232.1,-154.2L236.9,-152.8L240.0,-150.9L251.6,-156.1L271.6,-169.6L277.4,-181.4L283.1,-186.8L306.0,-197.6L318.6,-200.7L338.1,-201.6L352.3,-203.5L369.1,-204.2L375.6,-197.6L379.3,-192.7L385.3,-190.1L394.7,-188.2L393.9,-178.7L394.2,-159.9L393.5,-156.6L389.1,-148.6L384.8,-134.6L383.6,-125.2L382.4,-123.3L364.6,-123.5L362.2,-121.7L361.7,-119.8L362.6,-117.4L362.2,-114.9L360.7,-113.0L361.4,-109.9L364.6,-106.4L370.1,-104.2L376.1,-104.0L379.3,-104.4L381.4,-101.9L383.8,-98.1L383.6,-93.1L382.6,-86.6L380.0,-80.6L371.8,-73.6L367.9,-71.2L364.6,-69.8L362.9,-68.1L362.2,-65.6L362.4,-63.6L368.2,-58.0L367.9,-56.8L366.2,-53.8L364.1,-51.1L349.1,-45.3L342.9,-45.9L339.5,-43.1L338.3,-42.4L334.4,-45.2L325.5,-48.1L322.4,-47.1L320.5,-45.3L314.9,-43.4L311.1,-40.3L311.1,-36.3L318.1,-25.9L320.5,-23.8L320.5,-19.8L323.8,-15.0L327.5,-8.9L327.7,-5.1L327.5,-1.1L325.5,4.5L319.5,17.5L319.5,20.1L320.0,22.0L322.2,22.5L323.6,23.6L323.1,25.3L311.8,34.4L310.4,35.9L305.8,35.4L305.1,37.0L305.5,39.4L307.5,41.6L311.6,42.7L314.9,44.9L317.8,49.5L314.0,64.9ZM195.7,1.4L194.7,5.2L192.3,9.4L183.4,15.3L174.0,19.2L169.4,18.7L166.1,16.6L164.4,14.6L159.3,12.5L152.6,11.4L148.2,13.7L145.4,15.8L142.7,15.4L140.8,13.7L139.1,10.9L137.2,2.2L142.2,0.7L153.3,-0.0L161.7,3.1L172.8,4.5L181.5,0.3L188.2,4.0L195.7,1.4ZM336.9,-211.1L327.5,-207.6L325.1,-208.3L325.8,-209.4L334.0,-211.5L336.9,-211.1ZM309.9,-205.9L296.6,-204.3L292.1,-205.6L291.3,-206.6L294.9,-207.3L306.3,-207.5L309.6,-206.4L309.9,-205.9ZM255.0,-190.8L242.4,-183.5L241.5,-184.6L249.4,-191.0L255.0,-190.8ZM269.4,-198.6L263.1,-197.8L260.3,-199.1L275.4,-203.1L284.8,-204.3L286.5,-203.8L269.4,-198.6ZM240.0,-167.0L233.3,-159.9L229.2,-162.0L228.2,-163.6L230.1,-169.1L240.0,-178.3L240.0,-167.0ZM177.1,-33.9L183.9,-28.5L185.1,-26.8L185.6,-24.8L177.4,-22.8L168.5,-29.4L162.7,-27.8L160.5,-30.9L160.5,-33.0L166.5,-34.6L177.1,-33.9ZM363.6,-218.2L357.6,-217.9L359.3,-220.5L365.0,-222.6L368.2,-222.6L363.6,-218.2Z","LU":"M322.4,127.9L321.7,130.5L321.9,136.6L323.8,142.5L328.2,148.4L331.6,152.7L336.1,156.2L344.1,159.5L347.2,160.2L347.5,164.6L347.0,169.2L344.3,171.8L341.7,175.5L339.7,180.0L337.8,188.7L337.6,194.8L333.0,192.3L330.6,190.6L326.5,190.1L322.4,191.5L319.5,194.6L315.2,195.5L311.8,194.6L309.6,192.3L308.0,190.9L302.7,189.5L300.5,186.3L302.2,184.7L303.6,182.1L304.8,178.8L306.5,175.5L301.4,166.8L300.2,164.0L296.1,159.2L296.1,156.7L297.1,154.3L296.9,152.4L297.4,148.1L300.2,143.9L302.2,138.7L305.5,131.7L313.0,123.2L318.1,124.6L320.5,124.6L321.9,127.6L322.4,127.9Z","LI":"M554.1,434.3L548.8,433.8L547.9,433.8L547.4,430.3L547.6,422.7L550.5,413.0L551.2,414.5L551.5,416.6L552.2,418.7L552.5,421.5L553.4,424.3L555.3,426.9L556.1,429.3L555.1,432.4L554.1,434.3Z","IT":"M382.9,547.3L385.0,549.6L390.1,552.0L403.3,548.7L411.5,545.6L417.6,542.1L421.2,542.8L434.2,547.9L438.5,545.3L447.9,538.5L449.4,534.8L456.6,523.9L456.8,521.3L453.7,514.4L454.7,513.0L463.8,505.8L468.4,499.6L473.2,495.4L476.6,495.4L477.5,496.8L478.0,499.8L477.5,511.8L479.0,515.4L486.2,524.1L491.3,528.9L503.1,532.2L503.6,534.0L500.4,540.4L507.6,548.2L508.9,553.8L512.2,557.1L516.8,555.5L518.2,552.4L516.6,547.2L515.1,541.6L515.4,538.5L516.8,534.8L519.9,529.8L528.8,518.0L532.0,511.4L532.7,500.8L532.7,492.5L535.6,490.4L541.9,492.0L543.8,491.8L544.7,497.0L547.4,505.2L550.5,509.3L553.9,510.4L558.0,510.4L567.9,505.3L574.4,503.2L578.0,503.8L580.2,507.2L585.0,516.3L587.6,517.1L590.8,516.1L592.0,514.7L590.8,511.2L589.6,503.8L587.6,497.9L585.2,495.3L584.7,491.6L586.2,485.4L587.9,480.0L591.2,478.6L595.3,477.9L600.4,483.5L606.4,485.4L611.0,485.0L611.7,481.7L611.5,478.1L608.8,473.6L609.3,466.4L612.4,453.4L614.1,454.5L620.9,454.6L628.3,455.3L632.9,460.7L637.5,462.4L644.2,463.0L648.6,462.3L650.7,460.4L653.4,454.1L658.0,446.3L665.4,442.5L678.0,441.6L684.5,440.2L691.0,440.4L695.8,441.6L700.8,441.4L713.8,436.1L727.3,431.7L729.3,432.4L729.5,434.0L727.1,437.1L724.7,441.4L726.4,446.5L733.8,456.4L737.9,464.0L742.0,469.7L748.1,472.7L756.0,474.6L762.8,475.3L770.0,477.4L794.1,482.8L806.4,484.1L815.7,484.5L829.7,488.0L828.3,493.7L825.6,495.1L820.6,498.6L814.8,503.1L809.7,508.3L808.3,513.8L809.7,517.5L811.2,518.7L813.1,517.7L815.7,518.3L819.4,520.3L825.1,522.3L825.4,524.3L824.2,526.7L819.6,531.0L815.5,536.1L815.0,539.0L815.5,541.3L817.0,542.7L823.0,542.0L823.9,543.9L821.0,556.5L822.0,558.8L827.3,560.9L831.2,563.8L838.4,572.0L841.5,578.6L839.4,580.7L834.8,581.9L831.2,581.2L835.3,577.2L824.9,563.0L820.3,563.0L814.1,569.0L796.7,562.8L793.3,565.4L790.9,570.3L784.9,576.3L776.5,578.9L766.8,585.5L757.0,590.2L749.3,593.9L744.9,593.2L751.9,585.5L748.8,585.4L739.6,590.7L734.3,595.4L732.6,603.1L731.0,615.9L735.0,619.2L742.3,636.0L750.9,643.2L749.3,650.1L747.1,655.5L741.8,660.2L737.2,656.7L734.6,656.7L732.6,667.8L736.5,697.0L742.5,717.6L748.5,726.5L762.3,740.6L776.7,747.8L802.7,771.5L817.0,778.7L820.6,782.9L829.2,801.0L836.7,822.0L844.7,854.8L850.4,871.1L862.0,889.3L886.1,915.5L907.8,934.8L928.0,946.6L943.9,948.7L981.2,946.1L987.7,947.1L994.7,950.4L996.2,958.6L993.8,964.2L985.8,969.9L977.9,977.9L976.9,988.8L984.4,996.4L1020.5,1016.8L1057.4,1033.8L1068.9,1042.4L1082.2,1056.0L1114.4,1074.6L1119.7,1083.6L1139.5,1102.9L1148.2,1118.0L1149.9,1129.6L1145.8,1141.2L1143.8,1149.6L1140.5,1157.9L1132.0,1154.8L1122.6,1146.3L1108.4,1112.1L1082.4,1108.6L1077.1,1106.0L1067.7,1100.1L1067.2,1096.3L1064.8,1091.4L1062.7,1089.7L1052.5,1088.6L1045.8,1094.2L1037.6,1107.4L1028.5,1126.3L1019.1,1154.1L1018.6,1165.2L1023.6,1176.1L1038.8,1182.2L1050.4,1191.9L1058.1,1202.0L1058.8,1226.3L1062.2,1240.2L1057.1,1248.0L1047.2,1246.1L1034.2,1251.1L1024.8,1260.0L1021.0,1268.5L1021.9,1290.7L1020.0,1299.0L1002.4,1315.0L993.3,1331.3L990.9,1338.1L987.5,1345.9L965.1,1346.1L960.0,1336.5L959.8,1322.5L963.7,1313.8L971.8,1309.6L977.1,1291.6L975.5,1278.5L978.8,1272.8L981.7,1268.8L988.0,1266.4L996.9,1264.1L997.6,1245.9L990.9,1237.6L988.5,1226.1L985.1,1204.6L973.8,1177.3L967.7,1153.0L963.2,1141.1L955.9,1134.6L942.9,1134.8L936.4,1133.1L913.3,1116.1L911.9,1113.5L911.9,1109.1L915.7,1102.2L913.3,1093.1L910.4,1084.5L906.1,1077.0L901.0,1073.2L890.7,1075.6L887.0,1077.3L880.5,1076.6L875.5,1079.9L872.6,1080.1L880.5,1067.1L878.4,1064.1L870.4,1058.8L859.6,1057.9L856.7,1057.2L854.8,1060.7L852.8,1058.8L853.1,1053.0L840.3,1027.0L831.9,1016.4L827.8,1014.5L820.1,1016.8L807.1,1012.1L799.4,1011.0L795.3,1012.2L788.8,1015.5L785.6,1013.5L784.4,1010.0L772.9,999.0L758.2,993.0L729.7,958.8L721.1,945.9L703.0,931.9L691.7,911.2L682.3,903.7L668.8,897.7L665.7,898.4L661.6,900.6L658.4,901.0L656.0,898.4L658.4,895.6L661.3,894.4L660.4,886.6L645.0,866.1L635.8,859.6L633.4,855.5L631.5,849.9L629.5,846.5L625.2,844.2L621.6,844.7L616.5,843.3L616.8,833.4L617.7,826.0L617.0,819.5L612.2,802.9L603.5,788.6L598.7,754.8L594.6,745.2L585.2,738.0L564.0,730.0L534.6,708.1L528.4,707.7L510.5,699.2L499.5,697.9L485.2,705.3L467.9,726.3L453.7,748.0L448.6,752.4L430.6,759.8L414.4,763.3L414.2,757.7L413.7,753.6L416.4,748.9L420.9,743.5L425.0,736.6L426.7,731.7L426.0,728.4L424.1,723.5L421.4,723.2L406.2,727.2L402.6,726.1L391.3,719.9L379.3,711.9L374.7,706.4L373.0,700.8L374.2,697.2L373.2,693.7L370.8,689.0L373.0,683.6L376.8,676.8L378.8,672.3L381.9,671.1L383.3,668.3L380.9,657.2L379.5,655.5L377.3,654.1L374.0,653.9L368.2,651.7L363.8,647.9L362.9,642.6L360.7,637.8L356.9,633.1L356.6,628.2L360.7,625.6L366.7,625.5L370.8,626.5L380.2,618.5L383.6,617.8L386.7,616.1L389.1,605.1L391.3,601.9L391.8,599.9L389.9,597.7L382.4,589.9L378.8,581.9L373.5,573.0L368.4,569.0L367.5,565.9L367.2,561.9L368.4,558.6L377.3,553.2L382.9,547.3ZM748.5,749.9L750.5,744.7L749.7,741.1L745.4,741.8L742.5,746.5L744.4,750.6L748.5,749.9ZM608.6,854.3L610.7,858.1L611.0,860.3L609.5,862.9L610.3,868.7L604.5,863.8L596.1,866.2L591.0,865.7L589.6,861.6L590.8,859.0L598.7,858.4L601.4,857.2L606.2,857.7L608.6,854.3Z","DE":"M550.3,387.6L538.7,380.2L527.4,372.9L523.8,372.9L507.2,374.4L506.7,373.7L504.0,369.6L501.4,368.4L499.9,369.1L498.7,370.3L497.0,369.9L489.6,363.3L486.7,362.5L482.4,363.3L477.5,366.8L475.4,371.1L475.9,373.7L478.5,374.8L485.2,374.1L486.2,374.8L486.5,376.2L485.7,377.6L480.2,378.8L478.7,380.3L477.1,380.9L476.1,381.0L470.3,379.3L461.6,379.3L454.7,382.4L443.3,383.6L428.2,382.9L422.6,380.7L419.2,379.3L416.8,372.7L417.6,362.6L421.2,349.4L422.1,339.7L420.4,333.6L422.6,324.3L428.6,311.9L432.5,298.9L434.7,285.4L437.5,276.4L443.1,270.1L456.6,252.7L457.8,251.4L457.3,242.7L453.7,241.5L448.4,238.9L434.9,235.7L422.4,233.8L416.6,231.4L411.5,224.8L408.4,224.6L402.4,227.0L394.7,228.6L389.4,227.2L385.8,227.6L383.8,228.8L382.9,227.7L381.4,222.0L378.5,220.5L374.2,219.2L371.3,219.8L369.4,222.5L366.5,224.6L363.6,223.9L355.2,210.9L353.0,208.0L352.3,205.3L350.3,200.5L345.0,195.8L340.0,194.2L337.6,194.8L337.8,188.7L339.7,180.0L341.7,175.5L344.3,171.8L347.0,169.2L347.5,164.6L347.2,160.2L344.1,159.5L336.1,156.2L331.6,152.7L328.2,148.4L323.8,142.5L321.9,136.6L321.7,130.5L322.4,127.9L322.6,126.0L326.3,116.8L338.8,108.3L337.6,100.0L337.3,94.8L334.2,91.5L328.2,90.1L326.5,87.8L325.8,85.4L330.4,80.4L324.8,76.2L322.4,72.0L314.9,66.8L314.0,64.9L317.8,49.5L314.9,44.9L311.6,42.7L307.5,41.6L305.5,39.4L305.1,37.0L305.8,35.4L310.4,35.9L311.8,34.4L323.1,25.3L323.6,23.6L322.2,22.5L320.0,22.0L319.5,20.1L319.5,17.5L325.5,4.5L327.5,-1.1L327.7,-5.1L327.5,-8.9L323.8,-15.0L320.5,-19.8L320.5,-23.8L318.1,-25.9L311.1,-36.3L311.1,-40.3L314.9,-43.4L320.5,-45.3L322.4,-47.1L325.5,-48.1L334.4,-45.2L338.3,-42.4L339.5,-43.1L342.9,-45.9L349.1,-45.3L364.1,-51.1L366.2,-53.8L367.9,-56.8L368.2,-58.0L362.4,-63.6L362.2,-65.6L362.9,-68.1L364.6,-69.8L367.9,-71.2L371.8,-73.6L380.0,-80.6L382.6,-86.6L383.6,-93.1L383.8,-98.1L381.4,-101.9L379.3,-104.4L376.1,-104.0L370.1,-104.2L364.6,-106.4L361.4,-109.9L360.7,-113.0L362.2,-114.9L362.6,-117.4L361.7,-119.8L362.2,-121.7L364.6,-123.5L382.4,-123.3L383.6,-125.2L384.8,-134.6L389.1,-148.6L393.5,-156.6L394.2,-159.9L393.9,-178.7L394.7,-188.2L391.5,-192.7L385.0,-197.6L386.5,-207.8L388.6,-215.6L395.2,-225.5L400.5,-228.1L423.6,-229.7L448.9,-229.0L459.5,-214.4L455.6,-206.8L461.6,-203.3L464.8,-204.5L466.9,-211.1L468.4,-218.4L470.6,-220.7L478.5,-215.1L481.4,-211.5L481.4,-199.5L484.3,-215.6L482.1,-227.1L483.6,-238.0L486.9,-243.9L489.8,-247.6L508.4,-243.6L529.1,-245.7L536.8,-241.3L554.4,-220.0L560.2,-216.5L567.6,-215.5L557.5,-220.0L536.1,-245.8L529.8,-249.1L519.9,-250.0L513.7,-252.6L509.8,-256.6L508.9,-260.1L509.1,-286.1L505.2,-289.9L500.4,-291.3L497.5,-289.6L491.5,-289.4L490.3,-295.3L491.7,-299.8L504.0,-302.8L512.0,-306.8L512.5,-313.9L507.2,-319.4L501.1,-329.5L493.9,-339.2L493.2,-350.3L505.7,-350.2L508.9,-349.7L527.6,-344.4L532.2,-340.8L538.0,-340.6L548.6,-344.1L556.5,-345.5L559.4,-343.4L563.8,-342.5L564.7,-342.5L565.2,-340.8L574.9,-338.0L579.0,-333.9L583.5,-327.4L584.0,-318.1L578.2,-311.5L573.4,-307.3L591.7,-308.9L593.6,-305.0L596.3,-300.9L606.2,-303.8L631.0,-291.7L646.2,-297.6L650.0,-297.9L653.4,-288.0L649.5,-278.1L636.3,-267.5L639.4,-260.9L643.5,-259.6L656.0,-260.9L675.8,-254.5L679.9,-256.4L696.0,-271.4L702.3,-274.5L723.5,-276.9L727.3,-282.6L735.8,-288.4L741.3,-294.6L754.6,-306.8L768.1,-304.5L776.0,-302.3L784.9,-301.0L792.9,-288.2L812.9,-274.1L831.4,-275.4L837.9,-262.0L840.8,-245.3L846.6,-240.1L851.4,-236.8L866.6,-233.2L867.1,-233.0L867.5,-230.7L868.5,-222.4L869.7,-215.6L877.7,-188.4L877.4,-181.6L877.2,-179.9L874.5,-170.5L869.5,-162.7L862.7,-158.2L859.1,-153.3L858.4,-147.8L866.8,-138.2L884.2,-124.5L891.1,-112.9L888.0,-103.1L886.8,-96.0L888.3,-91.3L890.9,-87.7L895.2,-85.1L896.9,-80.7L896.2,-75.0L896.9,-71.0L900.1,-68.2L899.8,-67.0L898.4,-63.0L896.2,-55.7L895.0,-50.5L889.9,-43.2L891.6,-37.0L895.5,-29.9L898.4,-26.2L899.3,-22.8L897.4,-14.4L898.4,-12.3L910.4,-6.3L912.3,-3.5L913.5,2.2L917.9,14.7L914.3,30.5L911.1,39.2L904.4,52.8L903.9,54.1L903.2,55.7L901.0,58.1L898.1,58.5L893.8,56.7L890.9,54.5L891.6,48.6L889.7,48.1L887.3,44.6L886.3,40.6L883.7,39.0L874.3,37.3L871.2,36.3L868.7,37.1L866.8,39.7L868.0,42.3L869.9,44.8L875.0,48.6L874.5,50.1L863.2,53.8L856.2,57.8L849.7,59.9L843.0,63.9L829.7,68.4L820.1,69.6L818.2,70.6L814.5,78.3L812.1,79.8L809.7,79.1L808.0,77.8L805.6,78.8L803.5,81.4L800.8,82.4L798.9,82.3L795.0,89.0L783.9,90.9L782.7,94.4L780.6,98.4L779.1,99.3L774.1,97.7L767.1,96.8L763.2,99.1L758.4,100.3L752.6,100.7L746.4,105.0L739.9,112.6L736.5,119.4L734.6,121.8L731.4,115.6L727.6,111.1L724.9,108.8L722.5,108.8L722.0,109.9L722.0,113.2L724.4,118.7L727.6,122.4L728.1,125.1L730.0,130.2L734.6,135.7L741.8,140.1L746.6,144.4L750.2,150.5L750.2,152.2L749.3,154.7L747.6,156.9L746.1,160.0L742.0,166.1L743.2,168.7L746.6,172.0L749.5,176.0L753.1,182.4L758.2,193.9L761.5,198.6L766.1,203.4L770.5,207.1L777.2,206.9L784.4,214.0L792.4,224.1L798.2,228.8L802.3,230.2L805.6,234.0L808.5,239.2L809.7,242.3L812.4,244.4L819.6,244.1L828.8,252.4L834.3,258.5L837.4,263.3L836.7,265.2L836.2,271.3L836.2,277.9L835.5,281.2L831.4,285.7L829.2,286.8L828.0,287.6L815.5,281.7L814.5,282.8L813.6,283.5L810.2,300.7L808.0,303.8L804.4,306.9L797.2,309.9L792.4,311.1L788.3,312.5L776.0,319.6L770.5,323.9L766.8,329.3L766.8,332.4L772.9,341.5L779.9,351.0L779.9,359.2L776.7,365.4L776.0,367.8L778.2,368.7L782.0,369.1L785.2,370.1L786.6,374.4L786.1,382.1L784.9,389.2L783.9,392.1L780.8,392.5L774.8,389.4L770.2,385.7L768.3,383.6L768.3,381.0L769.3,379.3L767.6,376.0L761.8,373.0L755.8,374.4L751.2,376.3L748.3,376.3L745.2,373.4L740.3,371.1L733.8,369.7L730.0,368.2L729.0,369.1L729.5,375.3L728.3,378.1L697.0,381.7L687.4,385.0L680.6,389.4L675.3,391.3L674.1,394.1L669.0,397.5L663.3,398.6L661.8,397.5L658.2,399.1L651.9,400.6L647.8,400.1L645.9,397.3L642.1,393.0L640.4,389.9L640.6,388.0L631.7,387.6L626.2,385.2L614.4,385.9L611.5,384.9L611.0,385.9L609.1,398.2L606.9,403.4L603.0,408.6L598.2,411.6L594.4,412.1L594.6,408.3L595.6,403.6L592.7,402.6L588.6,402.0L586.7,400.6L587.1,397.2L586.2,395.1L584.5,392.7L580.2,389.5L571.5,384.9L565.5,382.4L563.1,384.9L558.7,387.5L552.0,386.6L550.3,387.6ZM830.4,-298.3L832.1,-291.5L830.2,-288.2L822.7,-293.8L815.0,-293.8L810.7,-284.9L807.3,-284.6L795.5,-292.5L793.8,-296.5L793.3,-299.7L795.0,-310.9L794.8,-314.4L798.4,-318.2L798.9,-323.8L805.4,-329.7L811.2,-329.9L813.1,-325.0L815.7,-321.5L825.4,-317.7L826.8,-316.0L827.8,-313.5L823.2,-308.9L821.8,-306.4L823.2,-302.4L830.4,-298.3ZM863.9,-255.0L863.0,-251.9L864.2,-247.1L861.3,-247.4L853.1,-246.4L844.9,-247.9L843.2,-253.8L844.7,-259.7L841.3,-263.5L838.1,-266.0L837.7,-269.3L838.1,-272.7L852.4,-263.4L863.9,-255.0Z","FR":"M547.4,859.5L545.7,874.1L546.9,878.4L549.3,881.5L550.5,884.8L552.5,923.9L552.0,927.0L543.8,942.8L542.1,947.3L541.6,966.9L540.2,972.1L537.3,977.3L532.2,994.0L527.6,1001.5L515.4,992.3L508.1,988.5L504.8,984.1L502.3,981.2L503.8,977.2L507.2,973.2L507.6,969.9L499.9,966.2L496.3,963.8L496.3,959.6L499.0,953.0L497.8,947.5L493.4,947.8L489.8,947.0L489.6,944.0L492.0,940.4L495.4,935.7L495.1,930.5L491.3,928.2L487.7,923.9L486.2,918.2L489.1,914.2L493.4,911.6L490.3,905.7L487.9,905.5L486.2,904.3L487.7,901.5L491.0,897.3L496.1,885.0L502.8,879.3L514.9,875.4L518.2,873.9L521.1,869.5L524.5,866.8L528.4,867.1L532.2,868.7L534.4,870.6L536.3,868.7L537.8,863.3L536.8,858.6L537.3,845.6L539.4,838.3L543.1,837.8L546.2,841.9L545.9,845.4L547.2,853.9L547.4,859.5ZM422.6,380.7L414.4,385.2L412.7,389.2L409.6,394.4L404.3,396.7L399.2,397.3L394.9,396.7L392.5,394.6L392.7,392.7L390.6,391.1L385.0,391.1L379.3,394.7L374.7,400.6L376.1,403.9L380.5,404.8L381.4,406.0L381.4,407.8L380.0,409.8L378.3,413.3L369.4,423.7L360.5,434.2L359.0,437.3L356.4,439.5L345.0,445.1L343.8,447.3L343.1,456.7L341.9,464.5L333.5,471.7L325.3,478.9L323.1,483.3L321.7,488.3L319.0,494.2L318.6,497.2L322.6,502.2L322.2,506.2L321.0,512.1L316.9,516.3L312.5,518.5L312.5,524.9L314.9,525.8L320.2,525.3L327.9,520.8L332.8,514.7L329.9,509.1L329.4,508.1L330.1,506.7L336.1,500.6L343.1,497.0L353.2,496.3L365.3,498.4L366.5,499.3L365.8,503.1L367.0,508.6L369.1,512.4L366.2,523.6L368.4,526.9L371.8,531.0L374.4,534.8L378.3,538.3L381.7,544.0L382.9,547.3L377.3,553.2L368.4,558.6L367.2,561.9L367.5,565.9L368.4,569.0L373.5,573.0L378.8,581.9L382.4,589.9L389.9,597.7L391.8,599.9L391.3,601.9L389.1,605.1L386.7,616.1L383.6,617.8L380.2,618.5L370.8,626.5L366.7,625.5L360.7,625.6L356.6,628.2L356.9,633.1L360.7,637.8L362.9,642.6L363.8,647.9L368.2,651.7L374.0,653.9L377.3,654.1L379.5,655.5L380.9,657.2L383.3,668.3L381.9,671.1L378.8,672.3L376.8,676.8L373.0,683.6L370.8,689.0L373.2,693.7L374.2,697.2L373.0,700.8L374.7,706.4L379.3,711.9L391.3,719.9L402.6,726.1L406.2,727.2L421.4,723.2L424.1,723.5L426.0,728.4L426.7,731.7L425.0,736.6L420.9,743.5L416.4,748.9L413.7,753.6L414.2,757.7L414.4,763.3L410.8,765.0L410.6,763.8L409.1,763.0L407.9,763.5L407.0,764.7L406.7,766.8L399.0,770.4L393.5,774.1L372.3,796.1L362.4,802.7L360.5,806.5L358.5,813.8L352.8,820.1L347.5,823.0L334.9,826.1L322.2,832.7L316.6,830.0L301.7,830.1L292.5,822.1L274.7,817.1L268.9,805.5L261.0,804.8L255.7,805.1L252.5,803.4L251.6,799.4L251.6,795.6L246.0,797.3L241.7,797.3L239.1,798.9L237.1,800.6L234.7,799.4L233.3,799.9L233.5,802.2L228.2,802.7L222.7,801.3L208.0,795.2L205.8,794.4L195.7,792.1L191.6,789.7L188.2,783.6L185.6,781.9L184.1,780.7L174.7,783.6L171.4,788.3L166.3,793.9L131.1,820.8L124.6,831.9L117.2,848.5L116.7,856.2L119.8,880.8L127.0,893.8L128.0,897.0L123.9,897.0L117.2,895.2L111.6,893.3L106.6,894.4L101.5,897.1L96.9,898.7L93.8,899.2L91.6,900.6L90.7,903.7L90.4,906.0L84.9,905.5L71.9,901.0L60.3,897.8L53.3,901.3L49.0,904.6L45.9,904.1L43.7,900.8L42.0,897.3L37.4,894.4L27.1,889.7L27.8,887.4L29.5,884.3L29.5,882.4L27.3,879.6L17.9,876.5L13.6,875.8L10.7,877.9L8.5,880.5L3.2,870.9L-0.4,869.0L-6.2,868.7L-12.7,865.7L-19.4,862.1L-35.8,856.2L-40.4,855.5L-42.1,856.3L-43.3,860.0L-44.0,869.9L-44.7,871.1L-52.4,871.5L-61.8,870.1L-66.2,870.8L-70.0,870.8L-73.6,868.0L-89.8,871.1L-92.4,869.5L-96.3,865.0L-100.8,861.4L-104.2,859.6L-107.1,857.4L-109.8,857.0L-113.6,859.1L-119.1,860.0L-123.7,859.8L-126.1,860.2L-136.5,849.1L-137.9,846.1L-143.2,845.2L-149.5,845.1L-165.6,837.9L-173.1,834.0L-174.1,831.7L-174.1,830.0L-175.3,830.3L-177.4,833.6L-178.6,836.2L-180.3,836.7L-182.5,836.4L-184.7,834.8L-186.1,832.9L-184.7,829.4L-182.3,825.1L-181.1,820.2L-181.3,816.1L-185.4,813.3L-191.4,812.1L-195.7,811.7L-201.5,809.3L-204.4,807.6L-206.8,802.7L-207.1,799.2L-196.2,796.3L-186.4,783.6L-177.0,738.0L-170.2,684.0L-165.4,673.9L-159.1,670.9L-164.2,663.7L-167.3,667.3L-168.5,671.3L-170.2,673.4L-166.6,623.9L-164.0,605.7L-159.4,586.7L-150.0,594.2L-142.3,601.9L-138.2,608.6L-133.1,630.7L-129.5,635.4L-123.7,639.9L-125.9,634.8L-130.0,631.0L-136.0,601.5L-139.9,593.2L-145.9,586.2L-165.2,571.5L-167.1,568.5L-168.0,563.0L-161.5,563.1L-156.0,565.9L-156.7,562.8L-158.4,559.5L-160.8,547.5L-163.0,519.6L-162.7,514.7L-163.7,508.8L-170.0,507.6L-174.8,507.2L-180.1,505.0L-206.6,488.5L-215.5,471.5L-224.9,459.0L-227.1,453.4L-226.8,447.9L-222.0,436.2L-226.3,428.8L-230.4,427.4L-234.0,423.7L-230.7,417.7L-228.0,413.7L-222.7,412.6L-215.5,414.0L-208.8,417.5L-203.7,418.4L-219.1,409.0L-244.4,412.1L-249.9,410.9L-254.5,408.8L-256.2,401.9L-252.6,398.7L-249.5,392.8L-253.1,388.8L-257.9,387.3L-265.4,387.5L-272.4,388.7L-274.0,386.2L-269.9,379.8L-273.6,377.4L-278.4,378.6L-285.4,379.8L-292.1,377.9L-298.4,370.6L-302.5,370.6L-305.4,371.5L-309.7,368.7L-314.3,368.0L-317.4,368.9L-321.7,364.7L-348.0,356.2L-359.3,355.2L-369.7,359.0L-375.5,357.8L-379.8,352.2L-383.2,343.2L-400.0,336.1L-396.7,331.4L-388.9,330.3L-380.0,327.0L-376.7,323.0L-383.6,318.2L-388.9,317.0L-391.1,315.2L-393.3,311.1L-390.1,309.0L-388.0,310.0L-381.7,310.7L-370.9,309.7L-374.7,305.3L-379.1,304.3L-381.0,303.3L-389.7,302.7L-393.8,304.3L-402.7,303.6L-404.8,298.9L-405.6,294.9L-402.9,286.1L-390.1,278.1L-358.6,269.2L-345.1,270.4L-335.5,268.9L-324.1,263.5L-319.3,258.6L-303.2,255.9L-288.0,260.9L-273.8,279.8L-267.1,286.2L-250.7,275.1L-226.1,275.5L-221.0,281.7L-219.1,276.5L-214.5,270.3L-210.9,273.1L-209.0,276.9L-183.2,275.8L-179.1,274.8L-186.1,270.3L-191.7,259.5L-192.9,219.8L-200.1,208.6L-208.3,190.9L-212.1,180.5L-212.4,176.9L-211.2,171.7L-201.0,171.8L-193.3,173.2L-178.4,169.2L-171.2,172.0L-171.7,180.2L-169.5,190.6L-166.8,195.5L-163.2,201.2L-151.2,200.7L-138.2,204.0L-121.8,204.5L-97.9,210.4L-87.8,206.9L-78.0,199.8L-59.2,195.1L-57.5,192.7L-68.3,193.7L-78.4,189.2L-79.6,184.2L-78.4,179.8L-74.6,169.8L-45.7,153.8L-25.2,148.9L-3.8,140.2L7.1,131.2L14.3,119.4L16.7,117.0L19.6,114.7L16.7,110.6L18.6,66.1L20.8,58.1L24.9,51.5L31.4,46.5L41.0,40.9L76.7,33.3L82.0,30.4L82.7,35.0L85.4,41.1L87.1,44.4L85.6,48.8L86.8,52.4L91.6,58.8L97.7,64.9L103.0,68.9L104.6,68.4L108.5,67.3L115.2,63.3L121.0,62.1L124.2,65.1L125.8,66.8L129.5,73.8L130.4,80.9L132.1,86.8L135.0,89.2L145.6,90.1L153.5,92.3L155.7,94.2L158.4,107.4L159.8,109.3L162.0,107.8L163.9,105.7L166.5,105.4L171.1,106.2L177.4,106.4L183.7,107.8L192.3,115.4L192.1,117.9L190.4,122.2L189.7,125.7L191.1,127.1L193.5,130.5L193.0,134.7L190.6,137.6L189.9,140.1L189.9,141.6L190.6,142.9L192.6,143.9L205.3,145.5L217.1,143.9L224.6,139.7L225.8,135.4L228.0,130.4L232.3,126.0L235.4,124.6L238.3,126.4L233.5,144.1L236.9,148.6L237.4,155.4L238.8,161.3L242.9,161.1L248.0,162.1L251.6,164.4L255.9,167.8L261.9,171.1L266.3,172.2L267.7,175.0L271.3,178.1L276.6,184.5L281.5,188.9L283.9,188.9L288.4,187.1L295.2,186.1L300.5,186.3L302.7,189.5L308.0,190.9L309.6,192.3L311.8,194.6L315.2,195.5L319.5,194.6L322.4,191.5L326.5,190.1L330.6,190.6L333.0,192.3L337.6,194.8L340.0,194.2L345.0,195.8L350.3,200.5L352.3,205.3L353.0,208.0L355.2,210.9L363.6,223.9L366.5,224.6L369.4,222.5L371.3,219.8L374.2,219.2L378.5,220.5L381.4,222.0L382.9,227.7L383.8,228.8L385.8,227.6L389.4,227.2L394.7,228.6L402.4,227.0L408.4,224.6L411.5,224.8L416.6,231.4L422.4,233.8L434.9,235.7L448.4,238.9L453.7,241.5L457.3,242.7L457.8,251.4L456.6,252.7L443.1,270.1L437.5,276.4L434.7,285.4L432.5,298.9L428.6,311.9L422.6,324.3L420.4,333.6L422.1,339.7L421.2,349.4L417.6,362.6L416.8,372.7L419.2,379.3L422.6,380.7ZM-165.9,549.6L-168.3,558.3L-172.6,550.3L-178.6,543.2L-179.8,536.8L-179.8,535.0L-172.9,539.7L-165.9,549.6Z","CZ":"M1173.2,188.9L1171.5,189.0L1167.7,190.6L1162.6,191.1L1157.3,190.9L1153.2,193.5L1149.4,197.9L1145.3,200.8L1143.1,203.6L1141.9,206.4L1128.2,214.2L1126.3,217.5L1124.8,222.0L1124.1,228.1L1123.1,233.5L1121.0,236.4L1113.5,238.9L1111.6,240.1L1110.4,242.8L1106.0,247.2L1101.2,251.2L1092.3,255.9L1082.9,257.3L1070.4,255.7L1063.1,254.0L1059.5,255.9L1054.7,261.9L1049.6,272.4L1047.5,280.2L1045.8,277.9L1042.7,269.6L1039.3,268.5L1034.7,267.8L1031.3,266.6L1023.9,261.8L1020.0,260.4L1015.7,260.0L1011.3,262.8L1008.2,266.1L998.3,266.1L987.5,264.5L971.8,253.6L968.0,253.4L963.7,254.0L956.9,251.4L943.7,244.2L937.4,242.7L933.5,243.5L930.2,245.1L927.5,245.4L926.1,243.0L921.3,240.2L916.2,239.9L914.8,241.6L913.3,257.3L911.6,262.8L904.9,262.6L902.5,265.2L897.2,272.9L896.0,280.0L886.8,278.6L882.5,277.4L878.6,278.4L874.3,282.4L862.5,282.1L853.1,279.8L849.0,270.8L844.7,267.1L839.4,264.0L837.4,263.3L834.3,258.5L828.8,252.4L819.6,244.1L812.4,244.4L809.7,242.3L808.5,239.2L805.6,234.0L802.3,230.2L798.2,228.8L792.4,224.1L784.4,214.0L777.2,206.9L770.5,207.1L766.1,203.4L761.5,198.6L758.2,193.9L753.1,182.4L749.5,176.0L746.6,172.0L743.2,168.7L742.0,166.1L746.1,160.0L747.6,156.9L749.3,154.7L750.2,152.2L750.2,150.5L746.6,144.4L741.8,140.1L734.6,135.7L730.0,130.2L728.1,125.1L727.6,122.4L724.4,118.7L722.0,113.2L722.0,109.9L722.5,108.8L724.9,108.8L727.6,111.1L731.4,115.6L734.6,121.8L736.5,119.4L739.9,112.6L746.4,105.0L752.6,100.7L758.4,100.3L763.2,99.1L767.1,96.8L774.1,97.7L779.1,99.3L780.6,98.4L782.7,94.4L783.9,90.9L795.0,89.0L798.9,82.3L800.8,82.4L803.5,81.4L805.6,78.8L808.0,77.8L809.7,79.1L812.1,79.8L814.5,78.3L818.2,70.6L820.1,69.6L829.7,68.4L843.0,63.9L849.7,59.9L856.2,57.8L863.2,53.8L874.5,50.1L875.0,48.6L869.9,44.8L868.0,42.3L866.8,39.7L868.7,37.1L871.2,36.3L874.3,37.3L883.7,39.0L886.3,40.6L887.3,44.6L889.7,48.1L891.6,48.6L890.9,54.5L893.8,56.7L898.1,58.5L901.0,58.1L903.2,55.7L903.9,54.1L909.7,53.8L915.5,51.4L916.0,47.2L915.7,39.7L916.2,38.5L925.1,40.8L934.0,44.1L935.2,51.7L937.6,55.4L940.5,58.8L943.2,60.4L947.8,60.6L959.8,65.1L965.6,65.9L971.6,69.1L976.4,72.4L980.3,72.9L982.0,76.5L984.1,78.8L988.0,77.1L1002.4,74.5L1007.7,77.9L1011.1,81.6L1011.6,82.6L1009.9,85.9L1008.9,88.3L1007.5,89.9L1002.4,91.6L999.8,94.6L997.6,97.5L999.1,100.7L1003.2,102.7L1006.0,103.3L1007.0,105.5L1016.2,115.1L1023.6,127.7L1026.3,129.8L1029.2,130.2L1032.1,128.4L1035.7,124.3L1040.0,121.3L1043.6,119.8L1049.9,116.3L1050.1,114.0L1044.8,105.5L1041.7,98.6L1042.4,97.4L1049.2,98.4L1060.7,102.2L1078.3,114.6L1081.4,114.6L1087.7,113.5L1094.5,111.6L1097.6,109.3L1098.8,110.2L1099.8,117.0L1098.1,120.6L1089.9,124.3L1090.4,126.0L1092.5,128.4L1096.1,130.0L1100.5,134.3L1103.6,139.4L1106.3,141.6L1109.1,142.9L1116.4,140.1L1118.5,138.0L1119.3,136.4L1120.7,136.8L1123.4,139.2L1124.1,140.8L1131.1,143.5L1135.2,147.0L1137.8,148.6L1140.7,147.0L1152.0,149.8L1155.2,152.1L1156.1,155.9L1155.4,158.1L1157.3,164.2L1171.5,178.6L1173.0,185.9L1173.2,188.9Z","BE":"M195.7,1.4L201.0,3.8L205.6,4.3L207.7,3.3L206.3,-2.8L210.2,-5.9L214.2,-7.5L216.2,-4.9L220.0,-2.3L223.2,-2.1L231.3,-9.0L233.0,-7.7L235.0,-5.2L235.2,-3.3L235.7,-1.2L237.4,-0.4L243.9,-0.7L247.0,-4.5L249.7,-7.0L251.6,-5.2L252.5,-0.7L254.2,5.4L261.9,12.1L268.4,14.0L276.4,12.7L279.5,11.4L281.7,12.5L283.6,16.1L288.2,20.1L297.8,23.1L301.0,24.6L302.9,27.4L302.4,31.4L297.8,41.1L297.1,44.1L297.8,44.9L296.9,46.9L290.8,53.3L290.4,55.7L292.3,59.3L294.0,62.5L297.6,64.0L301.0,64.6L307.2,64.7L314.0,64.9L314.9,66.8L322.4,72.0L324.8,76.2L330.4,80.4L325.8,85.4L326.5,87.8L328.2,90.1L334.2,91.5L337.3,94.8L337.6,100.0L338.8,108.3L326.3,116.8L322.6,126.0L322.4,127.9L321.9,127.6L320.5,124.6L318.1,124.6L313.0,123.2L305.5,131.7L302.2,138.7L300.2,143.9L297.4,148.1L296.9,152.4L297.1,154.3L296.1,156.7L296.1,159.2L300.2,164.0L301.4,166.8L306.5,175.5L304.8,178.8L303.6,182.1L302.2,184.7L300.5,186.3L295.2,186.1L288.4,187.1L283.9,188.9L281.5,188.9L276.6,184.5L271.3,178.1L267.7,175.0L266.3,172.2L261.9,171.1L255.9,167.8L251.6,164.4L248.0,162.1L242.9,161.1L238.8,161.3L237.4,155.4L236.9,148.6L233.5,144.1L238.3,126.4L235.4,124.6L232.3,126.0L228.0,130.4L225.8,135.4L224.6,139.7L217.1,143.9L205.3,145.5L192.6,143.9L190.6,142.9L189.9,141.6L189.9,140.1L190.6,137.6L193.0,134.7L193.5,130.5L191.1,127.1L189.7,125.7L190.4,122.2L192.1,117.9L192.3,115.4L183.7,107.8L177.4,106.4L171.1,106.2L166.5,105.4L163.9,105.7L162.0,107.8L159.8,109.3L158.4,107.4L155.7,94.2L153.5,92.3L145.6,90.1L135.0,89.2L132.1,86.8L130.4,80.9L129.5,73.8L125.8,66.8L124.2,65.1L121.0,62.1L115.2,63.3L108.5,67.3L104.6,68.4L103.0,68.9L97.7,64.9L91.6,58.8L86.8,52.4L85.6,48.8L87.1,44.4L85.4,41.1L82.7,35.0L82.0,30.4L111.1,13.5L128.7,4.8L137.2,2.2L139.1,10.9L140.8,13.7L142.7,15.4L145.4,15.8L148.2,13.7L152.6,11.4L159.3,12.5L164.4,14.6L166.1,16.6L169.4,18.7L174.0,19.2L183.4,15.3L192.3,9.4L194.7,5.2L195.7,1.4Z","AT":"M550.5,413.0L556.1,400.8L557.0,393.4L552.2,388.8L550.3,387.6L552.0,386.6L558.7,387.5L563.1,384.9L565.5,382.4L571.5,384.9L580.2,389.5L584.5,392.7L586.2,395.1L587.1,397.2L586.7,400.6L588.6,402.0L592.7,402.6L595.6,403.6L594.6,408.3L594.4,412.1L598.2,411.6L603.0,408.6L606.9,403.4L609.1,398.2L611.0,385.9L611.5,384.9L614.4,385.9L626.2,385.2L631.7,387.6L640.6,388.0L640.4,389.9L642.1,393.0L645.9,397.3L647.8,400.1L651.9,400.6L658.2,399.1L661.8,397.5L663.3,398.6L669.0,397.5L674.1,394.1L675.3,391.3L680.6,389.4L687.4,385.0L697.0,381.7L728.3,378.1L729.5,375.3L729.0,369.1L730.0,368.2L733.8,369.7L740.3,371.1L745.2,373.4L748.3,376.3L751.2,376.3L755.8,374.4L761.8,373.0L767.6,376.0L769.3,379.3L768.3,381.0L768.3,383.6L770.2,385.7L774.8,389.4L780.8,392.5L783.9,392.1L784.9,389.2L786.1,382.1L786.6,374.4L785.2,370.1L782.0,369.1L778.2,368.7L776.0,367.8L776.7,365.4L779.9,359.2L779.9,351.0L772.9,341.5L766.8,332.4L766.8,329.3L770.5,323.9L776.0,319.6L788.3,312.5L792.4,311.1L797.2,309.9L804.4,306.9L808.0,303.8L810.2,300.7L813.6,283.5L814.5,282.8L815.5,281.7L828.0,287.6L829.2,286.8L831.4,285.7L835.5,281.2L836.2,277.9L836.2,271.3L836.7,265.2L837.4,263.3L839.4,264.0L844.7,267.1L849.0,270.8L853.1,279.8L862.5,282.1L874.3,282.4L878.6,278.4L882.5,277.4L886.8,278.6L896.0,280.0L897.2,272.9L902.5,265.2L904.9,262.6L911.6,262.8L913.3,257.3L914.8,241.6L916.2,239.9L921.3,240.2L926.1,243.0L927.5,245.4L930.2,245.1L933.5,243.5L937.4,242.7L943.7,244.2L956.9,251.4L963.7,254.0L968.0,253.4L971.8,253.6L987.5,264.5L998.3,266.1L1008.2,266.1L1011.3,262.8L1015.7,260.0L1020.0,260.4L1023.9,261.8L1031.3,266.6L1034.7,267.8L1039.3,268.5L1042.7,269.6L1045.8,277.9L1047.5,280.2L1047.0,281.2L1046.8,284.9L1044.1,289.7L1041.5,295.8L1041.5,301.3L1048.7,320.3L1055.2,331.7L1056.4,336.1L1060.5,339.4L1056.4,343.7L1055.7,350.0L1053.3,352.7L1052.5,356.2L1053.5,359.5L1053.5,363.7L1054.9,369.2L1048.7,370.4L1041.5,370.3L1038.8,370.6L1036.2,372.2L1033.8,371.3L1027.0,366.1L1023.2,364.9L1020.5,365.2L1018.6,367.5L1015.0,370.4L1011.8,372.5L1012.6,374.4L1026.5,379.1L1028.9,386.4L1026.3,392.3L1025.3,395.3L1021.9,397.5L1018.1,399.6L1013.3,400.1L1012.8,403.3L1014.5,412.6L1013.0,414.7L1011.6,417.7L1013.0,425.5L1015.9,426.0L1016.6,427.7L1016.2,430.9L1015.4,434.2L1014.5,437.8L1014.0,439.4L1012.1,440.2L1005.8,439.7L1000.5,442.8L989.9,453.6L986.1,455.5L982.0,459.8L982.2,469.4L981.7,470.3L980.8,472.2L968.0,468.9L967.5,468.9L959.1,470.1L953.3,474.6L946.1,477.0L931.1,475.6L916.7,477.4L913.3,478.6L909.5,479.5L906.1,481.9L903.9,485.5L900.5,490.1L895.2,493.7L889.7,496.5L888.5,498.7L886.6,499.9L883.4,498.2L881.0,498.4L877.9,497.2L867.8,496.0L856.5,493.9L851.2,491.8L845.1,490.2L838.6,488.8L832.6,488.5L829.7,488.0L815.7,484.5L806.4,484.1L794.1,482.8L770.0,477.4L762.8,475.3L756.0,474.6L748.1,472.7L742.0,469.7L737.9,464.0L733.8,456.4L726.4,446.5L724.7,441.4L727.1,437.1L729.5,434.0L729.3,432.4L727.3,431.7L713.8,436.1L700.8,441.4L695.8,441.6L691.0,440.4L684.5,440.2L678.0,441.6L665.4,442.5L658.0,446.3L653.4,454.1L650.7,460.4L648.6,462.3L644.2,463.0L637.5,462.4L632.9,460.7L628.3,455.3L620.9,454.6L614.1,454.5L612.4,453.4L612.7,450.1L610.0,443.5L605.4,441.4L594.1,453.8L591.0,454.8L581.8,451.5L573.9,446.3L573.2,442.5L571.7,439.2L565.0,436.2L556.8,434.3L554.1,434.3L555.1,432.4L556.1,429.3L555.3,426.9L553.4,424.3L552.5,421.5L552.2,418.7L551.5,416.6L551.2,414.5L550.5,413.0Z"}};
+const L0=1.3,B1=51.4,KC=Math.cos(48*Math.PI/180)*100,KY=100;
+const P=([lo,la])=>[(lo-L0)*KC,(B1-la)*KY];
+const CITY={
+ FRA:{n:"法蘭克福",ll:[8.682,50.107],st:"Frankfurt (Main) Hauptbahnhof",lb:[-14,8,"end"]},
+ MAR:{n:"馬堡",ll:[8.770,50.802],st:"Marburg (Lahn) Bahnhof",lb:[-14,8,"end"]},
+ NUE:{n:"紐倫堡",ll:[11.077,49.446],st:"Nürnberg Hauptbahnhof",lb:[14,8,"start"]},
+ MUC:{n:"慕尼黑",ll:[11.558,48.140],st:"München Hauptbahnhof",lb:[14,8,"start"]},
+ NSW:{n:"新天鵝堡",ll:[10.750,47.557],st:"Schloss Neuschwanstein",lb:[0,34,"middle"]},
+ LUZ:{n:"琉森",ll:[8.310,47.050],st:"Luzern Bahnhof",lb:[-14,-8,"end"]},
+ RIG:{n:"瑞吉山",ll:[8.485,47.056],st:"Rigi Kulm",lb:[14,-8,"start"]},
+ BRN:{n:"伯恩",ll:[7.439,46.949],st:"Bern Bahnhof",lb:[-14,-8,"end"]},
+ INT:{n:"茵特拉根",ll:[7.869,46.690],st:"Interlaken Ost",lb:[-14,4,"end"]},
+ JFJ:{n:"少女峰",ll:[7.985,46.547],st:"Jungfraujoch",lb:[14,20,"start"]},
+ ZER:{n:"策馬特",ll:[7.749,46.024],st:"Zermatt Bahnhof",lb:[0,34,"middle"]},
+ COL:{n:"科爾馬",ll:[7.347,48.073],st:"Gare de Colmar",lb:[-14,10,"end"]},
+ STR:{n:"史特拉斯堡",ll:[7.735,48.585],st:"Gare de Strasbourg",lb:[14,-6,"start"]},
+ DIS:{n:"迪士尼",ll:[2.796,48.869],st:"Gare de Marne-la-Vallée Chessy",lb:[14,-10,"start"]},
+ PAR:{n:"巴黎",ll:[2.295,48.874],st:"Arc de Triomphe",lb:[-14,22,"end"]}
+};
+const LEGS=[
+ {d:"12/19",a:"FRA",b:"MAR",m:"train",mode:"S-Bahn → RE",dur:"約 1 小時 30 分",note:"從法蘭克福機場出發；晚上回法蘭克福約 1 小時。",rail:"de",from:"Frankfurt Flughafen Fernbahnhof"},
+ {d:"12/20",a:"FRA",b:"NUE",m:"train",mode:"ICE",dur:"約 2 小時 10 分",rail:"de"},
+ {d:"12/22",a:"NUE",b:"MUC",m:"train",mode:"ICE",dur:"約 1 小時 10 分",rail:"de"},
+ {d:"12/23",a:"MUC",b:"NSW",m:"bus",mode:"旅行團遊覽車",dur:"單程約 2 小時",note:"當天來回慕尼黑。"},
+ {d:"12/24",a:"MUC",b:"LUZ",m:"train",mode:"ECE → IR（蘇黎世轉車）",dur:"約 4 小時 20 分",rail:"ch"},
+ {d:"12/25",a:"LUZ",b:"RIG",m:"mtn",mode:"遊湖船 → 齒軌火車",dur:"約 1 小時 35 分",note:"下山走 Arth-Goldau 回琉森約 1 小時 15 分。",rail:"ch",from:"Luzern Bahnhofquai"},
+ {d:"12/26",a:"LUZ",b:"INT",m:"train",mode:"Luzern–Interlaken Express",dur:"約 1 小時 50 分",rail:"ch"},
+ {d:"12/26",a:"INT",b:"JFJ",m:"mtn",mode:"火車 → 艾格快線 → 齒軌火車",dur:"單程約 1 小時 30 分",note:"當天來回茵特拉根。",rail:"ch"},
+ {d:"12/26",a:"INT",b:"BRN",m:"train",mode:"IC",dur:"約 55 分",note:"下山後拿行李，晚上住伯恩。",rail:"ch"},
+ {d:"12/27",a:"BRN",b:"ZER",m:"train",mode:"IC → Visp 轉 MGB",dur:"約 2 小時 10 分",note:"當天來回伯恩。",rail:"ch",bend:.06},
+ {d:"12/28",a:"BRN",b:"COL",m:"train",mode:"IC → Basel 轉 TER",dur:"約 2 小時",rail:"ch"},
+ {d:"12/28",a:"COL",b:"STR",m:"train",mode:"TER（可選）",dur:"約 33 分",note:"當天來回科爾馬。",rail:"fr"},
+ {d:"12/29",a:"COL",b:"DIS",m:"train",mode:"TER → TGV（史特拉斯堡轉車）",dur:"約 3 小時 36 分",rail:"fr",bend:-.12},
+ {d:"12/31",a:"DIS",b:"PAR",m:"train",mode:"RER A → 地鐵 3 號線",dur:"約 1 小時 20 分",from:"B&B Hotel Marne-la-Vallée Val d'Europe, 77700 Serris",to:"Hotel Chevallier, 67 Rue Louis Rouquier, 92300 Levallois-Perret"},
+ {d:"1/3",a:"PAR",b:"FRA",m:"air",mode:"飛機 07:30 → 08:50",dur:"約 1 小時 20 分",note:"小傑 11:00 在法蘭克福轉機回台北（1/4 06:20 抵達）。",from:"Paris Charles de Gaulle Airport",to:"Frankfurt Airport",bend:.22}
+];
+const HOTELS=[
+ {h:H.bar,ll:[8.3045,47.0545],c:"LUZ",short:"Barabas",hl:[-12,28,"end"],n:"2 晚",links:[
+   {to:"琉森火車站",q:"Luzern Bahnhof",m:"步行",t:"約 12 分",w:1},
+   {to:"卡貝爾橋",q:"Kapellbrücke Luzern",m:"步行",t:"約 8 分",w:1},
+   {to:"遊船碼頭（往瑞吉山）",q:"Luzern Bahnhofquai",m:"步行",t:"約 12 分",w:1},
+   {to:"垂死獅子像",q:"Löwendenkmal Luzern",m:"步行",t:"約 8 分",w:1}]},
+ {h:H.evi,ll:[7.4554,46.9660],c:"BRN",short:"Evi's Home",hl:[12,-12,"start"],n:"2 晚",links:[
+   {to:"伯恩火車站",q:"Bern Bahnhof",m:"電車 9 號線＋步行",t:"約 15 分"},
+   {to:"鐘樓 Zytglogge（老城）",q:"Zytglogge Bern",m:"電車＋步行",t:"約 15 分"},
+   {to:"熊公園 BärenPark",q:"BärenPark Bern",m:"公車／步行",t:"約 20 分"}]},
+ {h:H.col,ll:[7.363,48.104],c:"COL",short:"B&B Colmar",hl:[12,-12,"start"],n:"1 晚",links:[
+   {to:"科爾馬火車站",q:"Gare de Colmar",m:"公車／計程車",t:"約 10–15 分",drive:1},
+   {to:"小威尼斯 Petite Venise",q:"Petite Venise Colmar",m:"公車／計程車",t:"約 15 分",drive:1},
+   {to:"老城・人頭屋",q:"Maison des Têtes Colmar",m:"公車／計程車",t:"約 12 分",drive:1}]},
+ {h:H.bb,ll:[2.786,48.856],c:"DIS",short:"B&B Hotel",hl:[12,30,"start"],n:"2 晚",links:[
+   {to:"迪士尼樂園",q:"Disneyland Park Paris",m:"公車（20–30 分一班）／計程車",t:"公車 20 分"},
+   {to:"迪士尼火車站 Marne-la-Vallée",q:"Gare de Marne-la-Vallée Chessy",m:"公車／計程車",t:"公車 20 分"},
+   {to:"打折村 La Vallée Village",q:"La Vallée Village",m:"公車／計程車",t:"約 15 分"}]},
+ {h:H.ch,ll:[2.2885,48.8935],c:"PAR",short:"Chevallier",hl:[-12,-14,"end"],n:"3 晚",links:[
+   {to:"地鐵 Anatole France 站（3 號線）",q:"Anatole France metro station Levallois-Perret",m:"步行",t:"約 5 分",w:1},
+   {to:"凱旋門",q:"Arc de Triomphe",m:"步行",t:"約 30 分",w:1},
+   {to:"艾菲爾鐵塔",q:"Tour Eiffel",m:"地鐵",t:"約 35 分"},
+   {to:"羅浮宮",q:"Musée du Louvre",m:"地鐵 3 → 1 號線",t:"約 30 分"},
+   {to:"戴高樂機場 CDG",q:"Paris Charles de Gaulle Airport",m:"計程車",t:"約 35–45 分",drive:1}]}
+];
+const PENDING="法蘭克福（12/19）、紐倫堡（12/20–21）、慕尼黑（12/22–23）";
+const MCOL={train:"var(--train)",mtn:"var(--mtn)",bus:"var(--bus)",air:"var(--air)"};
+function vb(lo0,lo1,la0,la1){const[a,b]=P([lo0,la1]),[c,d]=P([lo1,la0]);return [a,b,c-a,d-b]}
+const REG={all:[0,0,GEO?GEO.W:810,GEO?GEO.H:580],de:vb(6.6,12.6,47.2,51.15),ch:vb(6.9,9.05,45.82,47.3),paris:vb(2.1,3.0,48.68,49.0)};
+let region="all",selLeg=0,cur=REG.all.slice(),moved=0;
+const iso=d=>{const[m,dd]=d.split("/");return (m==="1"?"2027-01-":"2026-12-")+String(dd).padStart(2,"0")};
+(function(){const t=nowInfo().eu.date;const i=LEGS.findIndex(l=>iso(l.d)>=t);selLeg=i<0?LEGS.length-1:i})();
+function curve(l){const[a,b]=[P(CITY[l.a].ll),P(CITY[l.b].ll)];const bend=l.bend??.1;
+  const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=b[0]-a[0],dy=b[1]-a[1];const c=[mx-dy*bend,my+dx*bend];
+  return {d:`M${a[0].toFixed(1)},${a[1].toFixed(1)}Q${c[0].toFixed(1)},${c[1].toFixed(1)} ${b[0].toFixed(1)},${b[1].toFixed(1)}`,
+    mid:[.25*a[0]+.5*c[0]+.25*b[0],.25*a[1]+.5*c[1]+.25*b[1]]}}
+function drawMap(){
+  const svg=$("map");if(!GEO){svg.innerHTML="";return}
+  const s=cur[2]/810*1.15;setVB();
+  let h="";
+  const focus={DE:1,CH:1,FR:1};
+  for(const[k,d]of Object.entries(GEO.paths))h+=`<path d="${d}" fill="var(${focus[k]?"--land-hi":"--land"})" stroke="var(--border)" stroke-width="${(1.4*s).toFixed(2)}" stroke-linejoin="round"/>`;
+  if(region==="all")[["德國",9.6,50.4],["瑞士",8.9,46.55],["法國",4.6,47.4]].forEach(([n,lo,la])=>{const[x,y]=P([lo,la]);h+=`<text x="${x}" y="${y}" font-size="30" fill="var(--border)" font-weight="700" text-anchor="middle" letter-spacing="6">${n}</text>`});
+  LEGS.forEach((l,i)=>{const c=curve(l),sel=i===selLeg;
+    h+=`<path class="leg" data-i="${i}" d="${c.d}" fill="none" stroke="${MCOL[l.m]}" stroke-width="${((sel?7:4)*s).toFixed(2)}" stroke-linecap="round" ${l.m==="air"?`stroke-dasharray="${10*s} ${8*s}"`:""} opacity="${sel?1:.75}"/>`;
+    h+=`<path class="leg" data-i="${i}" d="${c.d}" fill="none" stroke="transparent" stroke-width="${(22*s).toFixed(1)}"/>`});
+  for(const[k,c]of Object.entries(CITY)){const[x,y]=P(c.ll);
+    h+=`<circle cx="${x}" cy="${y}" r="${6*s}" fill="var(--surface)" stroke="var(--ink)" stroke-width="${2.2*s}"/>`;
+    h+=`<text x="${x+c.lb[0]*s}" y="${y+c.lb[1]*s}" text-anchor="${c.lb[2]}" font-size="${22*s}" font-weight="700" fill="var(--ink)" stroke="var(--surface)" stroke-width="${5*s}" paint-order="stroke" stroke-linejoin="round">${c.n}</text>`}
+  HOTELS.forEach((o,i)=>{const[x,y]=P(o.ll),r=8*s;
+    h+=`<rect class="htl" data-h="${i}" x="${x-r}" y="${y-r}" width="${2*r}" height="${2*r}" rx="${2*s}" fill="var(--warn)" stroke="var(--surface)" stroke-width="${2*s}"/>`;
+    if(region!=="all")h+=`<text class="htl" data-h="${i}" x="${x+o.hl[0]*s}" y="${y+o.hl[1]*s}" text-anchor="${o.hl[2]}" font-size="${17*s}" font-weight="600" fill="var(--warn)" stroke="var(--surface)" stroke-width="${4*s}" paint-order="stroke">${o.short}</text>`});
+  LEGS.forEach((l,i)=>{const{mid}=curve(l),sel=i===selLeg,r=(sel?17:14)*s;
+    h+=`<g class="badge" data-i="${i}"><circle cx="${mid[0]}" cy="${mid[1]}" r="${r}" fill="${MCOL[l.m]}" stroke="var(--surface)" stroke-width="${2.5*s}"/><text x="${mid[0]}" y="${mid[1]+5.5*s}" text-anchor="middle" font-size="${(sel?17:15)*s}" font-weight="700" fill="var(--surface)" font-family="Barlow Condensed,sans-serif">${i+1}</text></g>`});
+  svg.innerHTML=h;
+}
+const svgEl=$("map");
+function fitAspect(v){const r=(svgEl.clientWidth/svgEl.clientHeight)||4/3;let[x,y,w,h]=v;const cx=x+w/2,cy=y+h/2;if(w/h<r)w=h*r;else h=w/r;return[cx-w/2,cy-h/2,w,h]}
+function setVB(){svgEl.setAttribute("viewBox",cur.map(n=>n.toFixed(2)).join(" "))}
+let redrawT;function settle(){clearTimeout(redrawT);redrawT=setTimeout(drawMap,140)}
+function toSvg(cx,cy){const r=svgEl.getBoundingClientRect();return[cur[0]+(cx-r.left)/r.width*cur[2],cur[1]+(cy-r.top)/r.height*cur[3]]}
+function zoomAt(f,px,py){let w=Math.max(25,Math.min(1500,cur[2]/f));const k=w/cur[2];cur=[px-(px-cur[0])*k,py-(py-cur[1])*k,w,cur[3]*k];setVB();settle()}
+const pts=new Map();
+svgEl.addEventListener("pointerdown",e=>{if(e.button>0)return;if(!pts.size)moved=0;pts.set(e.pointerId,[e.clientX,e.clientY])});
+window.addEventListener("pointermove",e=>{const p=pts.get(e.pointerId);if(!p)return;const np=[e.clientX,e.clientY],r=svgEl.getBoundingClientRect();
+  if(pts.size===1){const dx=np[0]-p[0],dy=np[1]-p[1];moved+=Math.abs(dx)+Math.abs(dy);cur[0]-=dx/r.width*cur[2];cur[1]-=dy/r.height*cur[3];setVB();settle()}
+  else if(pts.size===2){const oid=[...pts.keys()].find(k=>k!==e.pointerId),o=pts.get(oid);
+    const d0=Math.hypot(p[0]-o[0],p[1]-o[1]),d1=Math.hypot(np[0]-o[0],np[1]-o[1]);
+    const m0=[(p[0]+o[0])/2,(p[1]+o[1])/2],m1=[(np[0]+o[0])/2,(np[1]+o[1])/2];
+    cur[0]-=(m1[0]-m0[0])/r.width*cur[2];cur[1]-=(m1[1]-m0[1])/r.height*cur[3];
+    if(d0>0){const[sx,sy]=toSvg(m1[0],m1[1]);zoomAt(d1/d0,sx,sy)}moved+=99}
+  pts.set(e.pointerId,np)});
+const ptUp=e=>pts.delete(e.pointerId);window.addEventListener("pointerup",ptUp);window.addEventListener("pointercancel",ptUp);
+svgEl.addEventListener("wheel",e=>{e.preventDefault();const[sx,sy]=toSvg(e.clientX,e.clientY);zoomAt(Math.exp(-e.deltaY*.0015),sx,sy)},{passive:false});
+const ctr=()=>[cur[0]+cur[2]/2,cur[1]+cur[3]/2];
+$("zIn").addEventListener("click",()=>zoomAt(1.6,...ctr()));
+$("zOut").addEventListener("click",()=>zoomAt(1/1.6,...ctr()));
+$("zFit").addEventListener("click",()=>{cur=fitAspect(REG[region]);drawMap()});
+const ICON_FULL=`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`,ICON_EXIT=`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>`;
+const isFull=()=>$("mapbox").classList.contains("full");
+function setFull(on){const b=$("mapbox");b.classList.toggle("full",on);document.body.style.overflow=on?"hidden":"";
+  $("zFull").innerHTML=on?ICON_EXIT:ICON_FULL;$("zFull").setAttribute("aria-label",on?"離開全螢幕":"全螢幕");
+  try{if(on&&b.requestFullscreen){b.requestFullscreen().catch(()=>{})}else if(!on&&document.fullscreenElement){document.exitFullscreen().catch(()=>{})}}catch(e){}
+  requestAnimationFrame(()=>{cur=fitAspect(cur);drawMap()})}
+$("zFull").addEventListener("click",()=>setFull(!isFull()));
+document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement&&isFull())setFull(false);else requestAnimationFrame(()=>{cur=fitAspect(cur);drawMap()})});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&isFull())setFull(false)});
+window.addEventListener("resize",()=>{if(!$("viewMap").hidden){cur=fitAspect(cur);drawMap()}});
+function gm(o,d,mode){return "https://www.google.com/maps/dir/?api=1&origin="+encodeURIComponent(o)+"&destination="+encodeURIComponent(d)+(mode?"&travelmode="+mode:"")}
+function drawLeg(){
+  const l=LEGS[selLeg],A=CITY[l.a],B=CITY[l.b];
+  $("mapInfo").innerHTML=`<b>${selLeg+1}</b>${l.d}・${A.n} → ${B.n}・${esc(l.mode)}・${esc(l.dur)}`;
+  $("legCard").innerHTML=`<div class="row"><span class="dep">${selLeg+1}・${l.d}</span><span class="dur">車程<b>${esc(l.dur)}</b></span></div>
+   <h3>${A.n} → ${B.n}</h3><div class="route"><span class="line">${esc(l.mode)}</span></div>
+   <div class="btns"><a class="btn" target="_blank" rel="noopener" href="${gm(l.from||A.st,l.to||B.st,l.m==="air"?"":"transit")}">導航</a></div>`;
+  [...$("legList").querySelectorAll("button")].forEach((b,i)=>b.setAttribute("aria-pressed",i===selLeg?"true":"false"));
+}
+function pickLeg(i){selLeg=i;drawMap();drawLeg()}
+$("legList").innerHTML=LEGS.map((l,i)=>`<li><button type="button" id="leg-${i}" aria-pressed="false"><span class="num" style="background:${MCOL[l.m]}">${i+1}</span>
+  <span class="mid"><b>${CITY[l.a].n} → ${CITY[l.b].n}</b><span>${l.d}</span></span><span class="dd">${esc(l.dur.replace("約 ","").replace("單程約 ","單程 "))}</span></button></li>`).join("");
+$("legList").addEventListener("click",e=>{const b=e.target.closest("button");if(b)pickLeg(+b.id.slice(4))});
+$("hotelList").innerHTML=HOTELS.map((o,i)=>`<div class="hcard" id="hotel-${i}"><span class="lbl">${esc(o.h.nights)}・${CITY[o.c].n}</span><h3>${esc(o.h.name)}</h3>
+  <ul>${o.links.map(k=>`<li><a target="_blank" rel="noopener" href="${gm(o.h.q,k.q,k.w?"walking":k.drive?"driving":"transit")}"><span>→ ${esc(k.to)}</span><span class="t">${k.w?"步行 ":""}${esc(k.t.replace("約 ",""))}</span></a></li>`).join("")}</ul></div>`).join("")
+  +`<div class="hcard pending"><span class="lbl">住宿待補</span><div>${PENDING}</div></div>`;
+$("map").addEventListener("click",e=>{if(moved>8)return;const t=e.target.closest("[data-i],[data-h]");if(!t)return;if(t.dataset.h!==undefined&&isFull())setFull(false);
+  if(t.dataset.i!==undefined)pickLeg(+t.dataset.i);else $("hotel-"+t.dataset.h).scrollIntoView({behavior:"smooth",block:"start"})});
+$("regionBtns").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;region=b.dataset.r;
+  [...$("regionBtns").children].forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));cur=fitAspect(REG[region]);drawMap()});
+function showTab(map){$("viewTrip").hidden=map;$("viewMap").hidden=!map;$("tabTrip").setAttribute("aria-selected",!map);$("tabMap").setAttribute("aria-selected",map);if(map)requestAnimationFrame(()=>{cur=fitAspect(REG[region]);drawMap()});
+  try{localStorage.setItem("tab",map?"map":"trip")}catch(e){}}
+$("tabTrip").addEventListener("click",()=>showTab(false));
+$("tabMap").addEventListener("click",()=>showTab(true));
+drawMap();drawLeg();
+try{if(location.hash==="#map"||localStorage.getItem("tab")==="map")showTab(true)}catch(e){}
+</script>
+</body>
+</html>
